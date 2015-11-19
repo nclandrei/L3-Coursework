@@ -1,15 +1,18 @@
 /**
- * Dependency discoverer in a multi-threaded environment
- * Name: Andrei-Mihai Nicolae
- * GUID: 2147392n
- * This is my own work as defined in the Academic Ethics agreement I have
- * signed.”
- **/
+  * Java dependency discoverer in a multi-threaded environment
+  * Name: Andrei-Mihai Nicolae
+  * GUID: 2147392n
+  * This is my own work as defined in the Academic Ethics agreement I have signed.”
+ */
 
-import java.util.*;
-import java.util.concurrent.*;
-import java.io.*;
-import java.lang.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.StringJoiner;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
 
 public class dependencyDiscoverer {
 
@@ -22,7 +25,7 @@ public class dependencyDiscoverer {
         String tempBuff;
         String result;
         if (s.charAt(len) != '/') {
-            tempBuff = String.format("%s/", s); 
+            tempBuff = String.format("%s/", s);
         }
         else {
             tempBuff = s;
@@ -38,13 +41,13 @@ public class dependencyDiscoverer {
     private static char getFileExt(String file) {
         return file.charAt(file.indexOf('.')+1);
     }
- 
+
     private static File openFile(String file) {
         File currFile;
 
         for (String directory : dir) {
             currFile = new File(directory.concat(file));
-            if (currFile != null) {
+            if (currFile.exists() && !currFile.isDirectory()) {
                 return currFile;
             }
         }
@@ -58,19 +61,22 @@ public class dependencyDiscoverer {
             StringBuilder sb;
 
             if (currFile == null) {
-                System.err.println("Error opening " + file);
                 return;
             }
 
             BufferedReader br = new BufferedReader(new FileReader(currFile));
             String line = null;
             while ((line = br.readLine()) != null) {
+                int length = line.length();
+                if (line.compareTo("") == 0) {
+                    break;
+                }
                 int index = 0;
                 LinkedList<String> newLL;
                 while (line.charAt(index) == ' ') {
                     ++index;
                 }
-                if (line.substring(index, index+8).compareTo("#include") != 0) {
+                if (index > length-8 || line.substring(index, index+8).compareTo("#include") != 0) {
                     continue;
                 }
                 index += 8;
@@ -80,6 +86,7 @@ public class dependencyDiscoverer {
                 if (line.charAt(index) != '"') {
                     continue;
                 }
+                index++;
                 int len = line.length();
                 sb = new StringBuilder();
                 while (index < len) {
@@ -87,6 +94,7 @@ public class dependencyDiscoverer {
                         break;
                     }
                     sb.append(line.charAt(index));
+                    ++index;
                 }
                 String currName = sb.toString();
                 ll.add(currName);
@@ -99,23 +107,24 @@ public class dependencyDiscoverer {
             }
         }
         catch (Exception x) {
-            System.err.println("Problem while opening/parsing the file.");
+            x.printStackTrace();
         }
     }
 
     private static void printDependencies(ConcurrentHashMap<String,LinkedList<String>> map, LinkedList<String> toProcess) {
         LinkedList<String> ll;
-        String p; 
+        String p;
 
-        while ((p = toProcess.removeFirst()) != null) {
+        while (toProcess.size() != 0) {
+            p = toProcess.removeFirst();
             ll = hashM.get(p);
             for (String name : ll) {
                 if (map.containsKey(name)) {
                     continue;
                 }
-                System.out.println(" " + name);
+                System.out.print(" " + name);
                 map.put(name,new LinkedList<String>());
-                toProcess.add(p);
+                toProcess.add(name);
             }
         }
     }
@@ -127,33 +136,51 @@ public class dependencyDiscoverer {
     public static void main(String[] args) {
         int n = 0, i;
         String cpath = getEnvironVar("CPATH");
-        int argsLen = args.length; 
-        String workQueueIter;    
-           
+        String crawlerThreadsEnv = getEnvironVar("CRAWLER_THREADS");
+        int numberOfThreads;
+        Thread[] workers;
+        int argsLen = args.length;
+        String workQueueIter;
+
+
+        if (crawlerThreadsEnv != null) {
+            numberOfThreads = Integer.parseInt(crawlerThreadsEnv);
+        }
+        else {
+            numberOfThreads = 2;
+        }
+        workers = new Thread[numberOfThreads];
+
         if (cpath != null) {
             n = cpath.split(":").length;
         }
 
-        for (i = 1; i < argsLen; ++i) {
-           if (args[i].substring(0,2).compareTo("-I") != 0) {
-             break;
-           }
-        }  
+        for (i = 0; i < argsLen; ++i) {
+            if (args[i].substring(0,2).compareTo("-I") != 0) {
+                break;
+            }
+        }
+
         int start = i;
         int m = start - 1;
+
         dir = new ArrayList<String>(m+n+2);
         dir.add("./");
-        for (i = 1; i < start; ++i) {
-            dir.add(args[i].substring(2));
+
+        for (i = 0; i < start; ++i) {
+            dir.add(createDir(args[i].substring(2)));
         }
+
         if (n > 0) {
             String[] cpathDirs = cpath.split(":");
             for (String direc : cpathDirs){
-                dir.add(direc);
+                dir.add(createDir(direc));
             }
-        }       
+        }
+
         hashM = new ConcurrentHashMap<String, LinkedList<String>>();
         workQueue = new LinkedBlockingQueue<String>();
+
         for (i = start; i < argsLen; ++i) {
             LinkedList<String> ll;
             String root = getFileRoot(args[i]);
@@ -170,11 +197,24 @@ public class dependencyDiscoverer {
             hashM.put(args[i], ll);
         }
 
-        while ((workQueueIter = workQueue.poll()) != null) {
-            LinkedList<String> ll = hashM.get(workQueueIter);
-            process(workQueueIter, ll);
-            hashM.put(workQueueIter, ll);
+        if (crawlerThreadsEnv == null) {
+            numberOfThreads = 2;
         }
+
+        for (i = 0; i < numberOfThreads; ++i) {
+            workers[i] = new Thread(new Worker(workQueue, hashM));
+            workers[i].start();
+        }
+
+        try {
+            for (i = 0; i < numberOfThreads; ++i) {
+                workers[i].join();
+            }
+        }
+        catch (InterruptedException e) {
+            System.err.println("Error trying to join the thread.");
+        }
+
         for (i = start; i < argsLen; ++i) {
             ConcurrentHashMap<String, LinkedList<String>> printed;
             LinkedList<String> toProcess;
@@ -183,7 +223,7 @@ public class dependencyDiscoverer {
             root = getFileRoot(args[i]);
             ext = getFileExt(args[i]);
             String obj = root + ".o";
-            System.out.println(obj + ":");
+            System.out.print(obj + ":");
             printed = new ConcurrentHashMap<String, LinkedList<String>>();
             printed.put(obj, new LinkedList<String>());
             toProcess = new LinkedList<String>();
@@ -192,4 +232,26 @@ public class dependencyDiscoverer {
             System.out.println();
         }
     }
-}    
+
+    private static class Worker implements Runnable {
+
+        private LinkedBlockingQueue<String> queue;
+        private ConcurrentHashMap<String, LinkedList<String>> map;
+
+        public Worker (LinkedBlockingQueue<String> queue, ConcurrentHashMap<String, LinkedList<String>> map) {
+            this.map = map;
+            this.queue = queue;
+        }
+
+        @Override
+        public void run() {
+            String workQueueIter;
+            while ((workQueueIter = queue.poll()) != null) {
+                LinkedList<String> ll = hashM.get(workQueueIter);
+                process(workQueueIter, ll);
+                map.put(workQueueIter, ll);
+            }
+        }
+    }
+}
+
