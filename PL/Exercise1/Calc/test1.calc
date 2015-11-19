@@ -1,0 +1,6 @@
+set c = 8
+set e = 7
+put c*2
+put e*8
+set m = (c*2) + (e*8)
+put m

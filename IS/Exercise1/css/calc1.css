@@ -1,0 +1,139 @@
+/* general style for the whole document */
+
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+	font: bold 14px Helvetica-Neue, sans-serif;
+}
+
+html {
+	height: 100%;
+	background: white;
+	background-size: cover;
+}
+
+#calculator {
+	width: 542px;
+	height: auto;
+	margin: 100px auto;
+	padding: 20px 20px 9px;
+	background: #9d8854;
+	background: linear-gradient(#9d8854, #9d8854);
+	border-radius: 3px;
+	box-shadow: 0px 4px #9d8854, 0px 10px 15px rgba(0, 0, 0, 0.2);
+}
+
+.top span.clear {
+	float: left;
+}
+
+.top .resultBox {
+	height: 40px;
+	width: 410px;
+	float: right;
+	padding: 0 10px;
+	background: rgba(0, 0, 0, 0.2);
+	border-radius: 3px;
+	box-shadow: inset 0px 4px rgba(0, 0, 0, 0.2);
+	font-size: 17px;
+	line-height: 45px;
+	color: white;
+	text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+	text-align: right;
+	letter-spacing: 1px;
+	overflow: hidden;
+}
+
+
+/* general properties of the keys */
+
+.keys span, .top span.clear {
+	float: left;
+	position: relative;
+	top: 0;
+	cursor: pointer;
+	width: 66px;
+	height: 36px;
+	background: white;
+	border-radius: 3px;
+	box-shadow: 0px 4px rgba(0, 0, 0, 0.2);
+	margin: 0 7px 11px 0;
+	color: #888;
+	line-height: 36px;
+	text-align: center;
+
+}
+
+.keys span.operator {
+	background: #0B486B;
+	margin: 0 7px 11px 0;
+}
+
+.keys span.spFunction {
+	background: #27a53d;
+	color: white;
+	margin: 0 7px 11px 0;
+}
+
+/* effects added for the keys */
+
+.keys span:hover {
+	background: #44749D;
+	box-shadow: 0px 4px rgba(0, 0, 0, 0.2);
+	color: white;
+}
+
+.keys span:active {
+	box-shadow: 0px 0px #44749D;
+	top: 4px;
+}
+
+/* this is the evaluate button */
+
+.keys span.evaluate {
+	background: #79BD9A;
+	box-shadow: 0px 4px rgba(0, 0, 0, 0.2);
+	color: #888e5f;
+}
+
+.keys span.evaluate:hover {
+	background: #A8DBA8;
+	box-shadow: 0px 4px rgba(0, 0, 0, 0.2);
+	color: #ffffff;
+}
+
+.keys span.evaluate:active {
+	box-shadow: 0px 4px rgba(0, 0, 0, 0.2);
+	top: 4px;
+}
+
+/* clear button */
+
+.top span.clear {
+	background: #FA6900;
+	box-shadow: 0px 4px rgba(0, 0, 0, 0.2);
+	color: white;
+}
+
+.top span.clear:active {
+	top: 4px;
+	box-shadow: 0px 4px rgba(0, 0, 0, 0.2);
+}
+
+.top span.clear:hover {
+	background: #F38630;
+	box-shadow: 0px 4px rgba(0, 0, 0, 0.2);
+	color: white;
+}
+
+.top, .keys {overflow: hidden;}
+
+#testPanel {
+	float: left;
+	width: 300px;
+	height: 100%;
+	margin-left: 20px;
+	display: none;
+	overflow: scroll;
+}
