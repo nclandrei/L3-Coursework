@@ -151,8 +151,6 @@ public class dependencyDiscoverer {
         }
         workers = new Thread[numberOfThreads];
 
-        System.out.println(numberOfThreads);
-
         if (cpath != null) {
             n = cpath.split(":").length;
         }
@@ -203,20 +201,19 @@ public class dependencyDiscoverer {
             numberOfThreads = 2;
         }
 
-//        for (i = 0; i < numberOfThreads; ++i) {
-  //          workers[i] = new Thread(new Worker(workQueue, hashM, i));
-    //        System.out.println("Added thread");
-    //      workers[i].start();
-    //    }
+        for (i = 0; i < numberOfThreads; ++i) {
+            workers[i] = new Thread(new Worker(workQueue, hashM, i));
+            workers[i].start();
+        }
 
-    //    try {
-    //        for (i = 0; i < numberOfThreads; ++i) {
-    //            workers[i].join();
-    //        }
-    //    }
-    //    catch (InterruptedException e) {
-    //        System.err.println("Error trying to join the threads.");
-    //    }
+        try {
+            for (i = 0; i < numberOfThreads; ++i) {
+                workers[i].join();
+            }
+        }
+        catch (InterruptedException e) {
+            System.err.println("Error trying to join the thread.");
+        }
 
         for (i = start; i < argsLen; ++i) {
             ConcurrentHashMap<String, LinkedList<String>> printed;
@@ -251,12 +248,14 @@ public class dependencyDiscoverer {
         @Override
         public void run() {
             String workQueueIter;
+            System.out.println("Thread " + index + " started executing...");
             while ((workQueueIter = queue.poll()) != null) {
-                System.out.println("Thread " + index + " is running now...");
+//                System.out.println("Thread " + index + " executing...");
                 LinkedList<String> ll = hashM.get(workQueueIter);
                 process(workQueueIter, ll);
                 map.put(workQueueIter, ll);
             }
+            System.out.println("Thread " + index + " stopped executing.");
         }
     }
 }
