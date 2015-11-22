@@ -2,7 +2,7 @@
   * Java dependency discoverer in a multi-threaded environment
   * Name: Andrei-Mihai Nicolae
   * GUID: 2147392n
-  * This is my own work as defined in the Academic Ethics agreement I have signed.”
+  * This is my own work as defined in the Academic Ethics agreement I have signed.
  */
 
 import java.io.BufferedReader;
