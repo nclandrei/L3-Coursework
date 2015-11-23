@@ -68,12 +68,12 @@ public class dependencyDiscoverer {
             String line = null;
             while ((line = br.readLine()) != null) {
                 int length = line.length();
-                if (line.compareTo("") == 0) {
-                    break;
+                if (length == 0) {
+                    continue;
                 }
                 int index = 0;
                 LinkedList<String> newLL;
-                while (line.charAt(index) == ' ') {
+                while (index < length && line.charAt(index) == ' ') {
                     ++index;
                 }
                 if (index > length-8 || line.substring(index, index+8).compareTo("#include") != 0) {
