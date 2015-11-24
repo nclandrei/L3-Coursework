@@ -11,6 +11,7 @@ import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.StringJoiner;
+import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -19,6 +20,7 @@ public class dependencyDiscoverer {
     private static ArrayList<String> dir;
     private static ConcurrentHashMap<String, LinkedList<String>> hashM;
     private static LinkedBlockingQueue<String> workQueue;
+    private static int numberOfThreads;
 
     private static String createDir(String s) {
         int len = s.length() - 1;
@@ -55,10 +57,11 @@ public class dependencyDiscoverer {
     }
 
 
-    private static void process(String file, LinkedList<String> ll) {
+    private synchronized static void process(String file, LinkedList<String> ll) {
         try {
             File currFile = openFile(file);
             StringBuilder sb;
+            int includesFound = 0;
 
             if (currFile == null) {
                 return;
@@ -104,6 +107,9 @@ public class dependencyDiscoverer {
                 newLL = new LinkedList<String>();
                 hashM.put(currName, newLL);
                 workQueue.add(currName);
+                synchronized (workQueue) {
+                    workQueue.notify();
+                }
             }
         }
         catch (Exception x) {
@@ -137,7 +143,6 @@ public class dependencyDiscoverer {
         int n = 0, i;
         String cpath = getEnvironVar("CPATH");
         String crawlerThreadsEnv = getEnvironVar("CRAWLER_THREADS");
-        int numberOfThreads;
         Thread[] workers;
         int argsLen = args.length;
         String workQueueIter;
@@ -249,14 +254,26 @@ public class dependencyDiscoverer {
         public void run() {
             String workQueueIter;
             System.out.println("Thread " + index + " started executing...");
-            while ((workQueueIter = queue.poll()) != null) {
-//                System.out.println("Thread " + index + " executing...");
+            while (true) {
+                synchronized (queue) {
+                    if (queue.isEmpty()) {
+                        try {
+                            queue.wait(1);
+                        }
+                        catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+                if (queue.isEmpty()) {
+                    System.out.println("Thread " + index + " stopped execution...");
+                    return;
+                }
+                workQueueIter = queue.poll();
                 LinkedList<String> ll = hashM.get(workQueueIter);
                 process(workQueueIter, ll);
                 map.put(workQueueIter, ll);
             }
-            System.out.println("Thread " + index + " stopped executing.");
         }
     }
-}
-
+}   
