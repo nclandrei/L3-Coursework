@@ -14,6 +14,7 @@ import java.util.StringJoiner;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.CyclicBarrier;
 
 public class dependencyDiscoverer {
 
@@ -21,6 +22,10 @@ public class dependencyDiscoverer {
     private static ConcurrentHashMap<String, LinkedList<String>> hashM;
     private static LinkedBlockingQueue<String> workQueue;
     private static int numberOfThreads;
+    private static CyclicBarrier timer;
+    private static int poisonedElement;
+    private static Object latch;
+    private static boolean foundSomething;
 
     private static String createDir(String s) {
         int len = s.length() - 1;
@@ -54,67 +59,6 @@ public class dependencyDiscoverer {
             }
         }
         return null;
-    }
-
-
-    private synchronized static void process(String file, LinkedList<String> ll) {
-        try {
-            File currFile = openFile(file);
-            StringBuilder sb;
-            int includesFound = 0;
-
-            if (currFile == null) {
-                return;
-            }
-
-            BufferedReader br = new BufferedReader(new FileReader(currFile));
-            String line = null;
-            while ((line = br.readLine()) != null) {
-                int length = line.length();
-                if (length == 0) {
-                    continue;
-                }
-                int index = 0;
-                LinkedList<String> newLL;
-                while (index < length && line.charAt(index) == ' ') {
-                    ++index;
-                }
-                if (index > length-8 || line.substring(index, index+8).compareTo("#include") != 0) {
-                    continue;
-                }
-                index += 8;
-                while (line.charAt(index) == ' ') {
-                    ++index;
-                }
-                if (line.charAt(index) != '"') {
-                    continue;
-                }
-                index++;
-                int len = line.length();
-                sb = new StringBuilder();
-                while (index < len) {
-                    if (line.charAt(index) == '"') {
-                        break;
-                    }
-                    sb.append(line.charAt(index));
-                    ++index;
-                }
-                String currName = sb.toString();
-                ll.add(currName);
-                if (hashM.containsKey(currName)) {
-                    continue;
-                }
-                newLL = new LinkedList<String>();
-                hashM.put(currName, newLL);
-                workQueue.add(currName);
-                synchronized (workQueue) {
-                    workQueue.notify();
-                }
-            }
-        }
-        catch (Exception x) {
-            x.printStackTrace();
-        }
     }
 
     private static void printDependencies(ConcurrentHashMap<String,LinkedList<String>> map, LinkedList<String> toProcess) {
@@ -169,7 +113,7 @@ public class dependencyDiscoverer {
         int start = i;
         int m = start - 1;
 
-        dir = new ArrayList<String>(m+n+2);
+        dir = new ArrayList<String>(m + n + 2);
         dir.add("./");
 
         for (i = 0; i < start; ++i) {
@@ -185,6 +129,7 @@ public class dependencyDiscoverer {
 
         hashM = new ConcurrentHashMap<String, LinkedList<String>>();
         workQueue = new LinkedBlockingQueue<String>();
+
 
         for (i = start; i < argsLen; ++i) {
             LinkedList<String> ll;
@@ -206,9 +151,21 @@ public class dependencyDiscoverer {
             numberOfThreads = 2;
         }
 
+        
+        timer = new CyclicBarrier(numberOfThreads + 1);
+        poisonedElement = 0;
+        latch = new Object();
+
         for (i = 0; i < numberOfThreads; ++i) {
             workers[i] = new Thread(new Worker(workQueue, hashM, i));
             workers[i].start();
+        }
+
+        try {
+            timer.await();
+        }
+        catch (Exception e) {
+            e.printStackTrace();
         }
 
         try {
@@ -254,25 +211,115 @@ public class dependencyDiscoverer {
         public void run() {
             String workQueueIter;
             System.out.println("Thread " + index + " started executing...");
-            while (true) {
-                synchronized (queue) {
-                    if (queue.isEmpty()) {
+
+            // this tries to make all threads start at almost the same time
+            // such that we use them at their full power
+            try {
+                timer.await();
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            // we do this while we still have something to add
+            while (poisonedElement < numberOfThreads) {
+                // we take the first element from the queue (removing it from there as well);
+                // we make a double check if it's null - if not, we process it and put it in the map
+
+                workQueueIter = queue.poll();
+                if (workQueueIter != null) {
+                    LinkedList<String> ll = hashM.get(workQueueIter);
+                    process(workQueueIter, ll);
+                    map.put(workQueueIter, ll);
+                    poisonedElement = 0;
+                    synchronized (latch) {
+                        foundSomething = true;
+                        latch.notifyAll();
+                    }
+                }
+                else {
+                    foundSomething = false;
+                    if (poisonedElement >= numberOfThreads - 1) {
+                        poisonedElement++;
+                        synchronized (latch) {
+                            latch.notifyAll();
+                        }
+                        break;
+                    }
+                    while (!foundSomething) {
                         try {
-                            queue.wait(1);
+                            synchronized (latch) {
+                                poisonedElement++;
+                                latch.wait();
+                                break;
+                            }
                         }
                         catch (InterruptedException e) {
                             e.printStackTrace();
                         }
                     }
                 }
-                if (queue.isEmpty()) {
-                    System.out.println("Thread " + index + " stopped execution...");
+            }
+            System.out.println("Thread " + index + " stopped executing");
+        }
+
+        /*
+         * This method processes the file given as an argument and finds all includes
+         * inside it. Then, adds them to the hashMap and workQueue defined globally
+        */
+        private void process(String file, LinkedList<String> ll) {
+            try {
+                File currFile = openFile(file);
+                StringBuilder sb;
+
+                if (currFile == null) {
                     return;
                 }
-                workQueueIter = queue.poll();
-                LinkedList<String> ll = hashM.get(workQueueIter);
-                process(workQueueIter, ll);
-                map.put(workQueueIter, ll);
+
+                BufferedReader br = new BufferedReader(new FileReader(currFile));
+                String line = null;
+                while ((line = br.readLine()) != null) {
+                    int length = line.length();
+                    if (length == 0) {
+                        continue;
+                    }
+                    int index = 0;
+                    LinkedList<String> newLL;
+                    while (index < length && line.charAt(index) == ' ') {
+                        ++index;
+                    }
+                    if (index > length-8 || line.substring(index, index+8).compareTo("#include") != 0) {
+                        continue;
+                    }
+                    index += 8;
+                    while (line.charAt(index) == ' ') {
+                        ++index;
+                    }
+                    if (line.charAt(index) != '"') {
+                        continue;
+                    }
+                    index++;
+                    int len = line.length();
+                    sb = new StringBuilder();
+                    while (index < len) {
+                        if (line.charAt(index) == '"') {
+                            break;
+                        }
+                        sb.append(line.charAt(index));
+                        ++index;
+                    }
+                    String currName = sb.toString();
+                    ll.add(currName);
+                    if (hashM.containsKey(currName)) {
+                        continue;
+                    }
+                    newLL = new LinkedList<String>();
+                    hashM.put(currName, newLL);
+                    workQueue.add(currName);
+                }
+            }
+            catch (Exception x) {
+                x.printStackTrace();
             }
         }
     }
