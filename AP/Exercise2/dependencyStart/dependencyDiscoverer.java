@@ -18,15 +18,19 @@ import java.util.concurrent.CyclicBarrier;
 
 public class dependencyDiscoverer {
 
-    private static ArrayList<String> dir;
-    private static ConcurrentHashMap<String, LinkedList<String>> hashM;
-    private static LinkedBlockingQueue<String> workQueue;
-    private static int numberOfThreads;
-    private static CyclicBarrier timer;
-    private static int poisonedElement;
-    private static Object latch;
+    private static ArrayList<String> dir;   // will store the directories in which we search for includes
+    private static ConcurrentHashMap<String, LinkedList<String>> hashM;  // this is the "another structure", the master hashMap
+    private static LinkedBlockingQueue<String> workQueue;  // the workQueue that will contain all files needed to have work done on
+    private static int numberOfThreads;  // variable that will store the number of threads
+    private static CyclicBarrier timer;  // we will use this to start all threads at approximately the same time
+    private static int poisonedElement;  // our element that will be used together with the other 2 below to let the main thread
+                                         // know when the whole work is finished
+    private static Object lock;
     private static boolean foundSomething;
 
+    /**
+      * This method creates a directory path, adding / if necessary
+     */
     private static String createDir(String s) {
         int len = s.length() - 1;
         String tempBuff;
@@ -41,14 +45,23 @@ public class dependencyDiscoverer {
         return result;
     }
 
+    /**
+      * Utility to get a file's root
+     */
     private static String getFileRoot(String file) {
         return file.substring(0, file.indexOf('.'));
     }
 
+    /**
+      * Utility function to get a file's extension
+     */
     private static char getFileExt(String file) {
         return file.charAt(file.indexOf('.')+1);
     }
 
+    /**
+      * Another utility function retrieving a file given its path as a string
+     */
     private static File openFile(String file) {
         File currFile;
 
@@ -61,6 +74,9 @@ public class dependencyDiscoverer {
         return null;
     }
 
+    /**
+      * Recursively print all the dependencies for the processed files
+     */
     private static void printDependencies(ConcurrentHashMap<String,LinkedList<String>> map, LinkedList<String> toProcess) {
         LinkedList<String> ll;
         String p;
@@ -79,6 +95,9 @@ public class dependencyDiscoverer {
         }
     }
 
+    /** 
+      * Utility function to retrieve environment variables
+     */
     private static String getEnvironVar(String env) {
         return System.getenv(env);
     }
@@ -89,17 +108,8 @@ public class dependencyDiscoverer {
         String crawlerThreadsEnv = getEnvironVar("CRAWLER_THREADS");
         Thread[] workers;
         int argsLen = args.length;
-        String workQueueIter;
 
-
-        if (crawlerThreadsEnv != null) {
-            numberOfThreads = Integer.parseInt(crawlerThreadsEnv);
-        }
-        else {
-            numberOfThreads = 2;
-        }
-        workers = new Thread[numberOfThreads];
-
+        // we start getting all the 
         if (cpath != null) {
             n = cpath.split(":").length;
         }
@@ -130,7 +140,6 @@ public class dependencyDiscoverer {
         hashM = new ConcurrentHashMap<String, LinkedList<String>>();
         workQueue = new LinkedBlockingQueue<String>();
 
-
         for (i = start; i < argsLen; ++i) {
             LinkedList<String> ll;
             String root = getFileRoot(args[i]);
@@ -147,20 +156,26 @@ public class dependencyDiscoverer {
             hashM.put(args[i], ll);
         }
 
-        if (crawlerThreadsEnv == null) {
+        // we create a certain number of threads using the CRAWLER_THREADS env variable 
+        if (crawlerThreadsEnv != null) {
+            numberOfThreads = Integer.parseInt(crawlerThreadsEnv);
+        }
+        else {
             numberOfThreads = 2;
         }
-
+        workers = new Thread[numberOfThreads];
         
+        // we initialize all our objects that will be used by the workers
         timer = new CyclicBarrier(numberOfThreads + 1);
         poisonedElement = 0;
-        latch = new Object();
+        lock = new Object();
 
         for (i = 0; i < numberOfThreads; ++i) {
-            workers[i] = new Thread(new Worker(workQueue, hashM, i));
+            workers[i] = new Thread(new Worker(workQueue, hashM, index));
             workers[i].start();
         }
 
+        // here we trigger the actual beginning of the program
         try {
             timer.await();
         }
@@ -168,6 +183,7 @@ public class dependencyDiscoverer {
             e.printStackTrace();
         }
 
+        // we wait for all threads to finish and then continue to printing
         try {
             for (i = 0; i < numberOfThreads; ++i) {
                 workers[i].join();
@@ -177,6 +193,8 @@ public class dependencyDiscoverer {
             System.err.println("Error trying to join the thread.");
         }
 
+        // here we print out the dependencies for all the files we have passed on
+        // as arguments when running the program
         for (i = start; i < argsLen; ++i) {
             ConcurrentHashMap<String, LinkedList<String>> printed;
             LinkedList<String> toProcess;
@@ -204,13 +222,12 @@ public class dependencyDiscoverer {
         public Worker (LinkedBlockingQueue<String> queue, ConcurrentHashMap<String, LinkedList<String>> map, int index) {
             this.map = map;
             this.queue = queue;
-            this.index = index;
+	    this.index = index;
         }
 
         @Override
         public void run() {
             String workQueueIter;
-            System.out.println("Thread " + index + " started executing...");
 
             // this tries to make all threads start at almost the same time
             // such that we use them at their full power
@@ -221,36 +238,55 @@ public class dependencyDiscoverer {
                 e.printStackTrace();
             }
 
-            // we do this while we still have something to add
-            while (poisonedElement < numberOfThreads) {
-                // we take the first element from the queue (removing it from there as well);
-                // we make a double check if it's null - if not, we process it and put it in the map
+	    System.out.println("Thread " + index + " started.");
 
+            // we do this while there is AT LEAST one thread NOT waiting
+            while (poisonedElement < numberOfThreads) {
+
+                // we take the first element from the queue (removing it from there as well);
+                // (the ConcurrentHashMap and LinkedBlockingQueue are created to be thread-safe,
+                // thus getting, removing and all other operations are synchronized)
                 workQueueIter = queue.poll();
                 if (workQueueIter != null) {
                     LinkedList<String> ll = hashM.get(workQueueIter);
                     process(workQueueIter, ll);
                     map.put(workQueueIter, ll);
+
+                    // we reset the poisonedElement in order to let other waiting threads know
+                    // that there is one thread that has added some more elements in the work queue
+                    // that need attention
                     poisonedElement = 0;
-                    synchronized (latch) {
+                    synchronized (lock) {
                         foundSomething = true;
-                        latch.notifyAll();
+                        lock.notifyAll();
                     }
                 }
+
+                // if the first element in the queue is empty, then we need to make sure that this thread
+                // WAITS effectively until some other thread adds something in the queue
                 else {
                     foundSomething = false;
+
+                    // this is one of the most important bits of my algorithm: if this thread was the LAST one running
+                    // and even he doesn't find anything to add, then we increase poisonedElement (will be equal to the
+                    // number of threads), notify all other threads that work has been finally done and let's them exit the 
+                    // wait; they will then go to the outher loop and see that poisonedelement is indeed equal to numberOfThreads;
+                    // at the end, we also let the current thread that work is done and make it exit
                     if (poisonedElement >= numberOfThreads - 1) {
                         poisonedElement++;
-                        synchronized (latch) {
-                            latch.notifyAll();
+                        synchronized (lock) {
+                            lock.notifyAll();
                         }
                         break;
                     }
+
+                    // we are using foundSomething to avoid any race conditions
                     while (!foundSomething) {
                         try {
-                            synchronized (latch) {
+                            synchronized (lock) {
+                                // another thread in the waiting list: increment poisoned Element
                                 poisonedElement++;
-                                latch.wait();
+                                lock.wait();
                                 break;
                             }
                         }
@@ -259,8 +295,8 @@ public class dependencyDiscoverer {
                         }
                     }
                 }
+		System.out.println("Thread " + index + " finished.");
             }
-            System.out.println("Thread " + index + " stopped executing");
         }
 
         /*
