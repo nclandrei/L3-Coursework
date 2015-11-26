@@ -11,7 +11,6 @@ import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.StringJoiner;
-import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.CyclicBarrier;
@@ -25,8 +24,8 @@ public class dependencyDiscoverer {
     private static CyclicBarrier timer;  // we will use this to start all threads at approximately the same time
     private static int poisonedElement;  // our element that will be used together with the other 2 below to let the main thread
                                          // know when the whole work is finished
-    private static Object lock;
-    private static boolean foundSomething;
+    private static boolean done;
+    private static PoisonPill poisonPill; 
 
     /**
       * This method creates a directory path, adding / if necessary
@@ -109,7 +108,7 @@ public class dependencyDiscoverer {
         Thread[] workers;
         int argsLen = args.length;
 
-        // we start getting all the 
+        // we start getting all the directories
         if (cpath != null) {
             n = cpath.split(":").length;
         }
@@ -137,6 +136,7 @@ public class dependencyDiscoverer {
             }
         }
 
+        // initializing the 2 main thread-safe data structures
         hashM = new ConcurrentHashMap<String, LinkedList<String>>();
         workQueue = new LinkedBlockingQueue<String>();
 
@@ -167,11 +167,11 @@ public class dependencyDiscoverer {
         
         // we initialize all our objects that will be used by the workers
         timer = new CyclicBarrier(numberOfThreads + 1);
-        poisonedElement = 0;
-        lock = new Object();
+        poisonPill = new PoisonPill(0);
+        done = false;
 
         for (i = 0; i < numberOfThreads; ++i) {
-            workers[i] = new Thread(new Worker(workQueue, hashM, index));
+            workers[i] = new Thread(new Worker(workQueue, hashM));
             workers[i].start();
         }
 
@@ -219,10 +219,9 @@ public class dependencyDiscoverer {
         private ConcurrentHashMap<String, LinkedList<String>> map;
         private int index;
 
-        public Worker (LinkedBlockingQueue<String> queue, ConcurrentHashMap<String, LinkedList<String>> map, int index) {
+        public Worker (LinkedBlockingQueue<String> queue, ConcurrentHashMap<String, LinkedList<String>> map) {
             this.map = map;
             this.queue = queue;
-	    this.index = index;
         }
 
         @Override
@@ -238,10 +237,8 @@ public class dependencyDiscoverer {
                 e.printStackTrace();
             }
 
-	    System.out.println("Thread " + index + " started.");
-
-            // we do this while there is AT LEAST one thread NOT waiting
-            while (poisonedElement < numberOfThreads) {
+            // we do this while done is false
+            while (!done) {
 
                 // we take the first element from the queue (removing it from there as well);
                 // (the ConcurrentHashMap and LinkedBlockingQueue are created to be thread-safe,
@@ -252,41 +249,43 @@ public class dependencyDiscoverer {
                     process(workQueueIter, ll);
                     map.put(workQueueIter, ll);
 
-                    // we reset the poisonedElement in order to let other waiting threads know
-                    // that there is one thread that has added some more elements in the work queue
+                    // we reset the poisonPill in order to let other waiting threads know
+                    // that there is at least one thread that has added some more elements in the work queue
                     // that need attention
-                    poisonedElement = 0;
-                    synchronized (lock) {
-                        foundSomething = true;
-                        lock.notifyAll();
+                    synchronized (poisonPill) {
+                        poisonPill.resetCount();
+                        poisonPill.notifyAll();
                     }
                 }
 
                 // if the first element in the queue is empty, then we need to make sure that this thread
                 // WAITS effectively until some other thread adds something in the queue
                 else {
-                    foundSomething = false;
+                    // we need to increment the pill such that we know we have another thread that found the 
+                    // queue empty
+                    synchronized (poisonPill) {
+                        poisonPill.incrementCount();
+                    }
 
-                    // this is one of the most important bits of my algorithm: if this thread was the LAST one running
-                    // and even he doesn't find anything to add, then we increase poisonedElement (will be equal to the
-                    // number of threads), notify all other threads that work has been finally done and let's them exit the 
-                    // wait; they will then go to the outher loop and see that poisonedelement is indeed equal to numberOfThreads;
-                    // at the end, we also let the current thread that work is done and make it exit
-                    if (poisonedElement >= numberOfThreads - 1) {
-                        poisonedElement++;
-                        synchronized (lock) {
-                            lock.notifyAll();
+                    // if all threads were waiting and the current thread is also attempting to wait
+                    // we then stop all of them and mark work as done
+                    if (poisonPill.getCount() >= numberOfThreads - 1) {
+                        synchronized (poisonPill) { 
+                            done = true;
+                            poisonPill.notifyAll();
                         }
                         break;
                     }
 
-                    // we are using foundSomething to avoid any race conditions
-                    while (!foundSomething) {
+                    // we are using done variable to avoid any race conditions
+                    // moreover, because we might have a thread trying to go inside the waiting state
+                    // exactly before done is made true, we also check that the count is smaller than
+                    // the total number of threads
+                    while (!done && poisonPill.getCount() < numberOfThreads) {
                         try {
-                            synchronized (lock) {
-                                // another thread in the waiting list: increment poisoned Element
-                                poisonedElement++;
-                                lock.wait();
+                            synchronized (poisonPill) {
+                                // another thread in the waiting list -- waiting until notified
+                                poisonPill.wait();
                                 break;
                             }
                         }
@@ -294,9 +293,8 @@ public class dependencyDiscoverer {
                             e.printStackTrace();
                         }
                     }
-                }
-		System.out.println("Thread " + index + " finished.");
-            }
+		        }
+	        }
         }
 
         /*
@@ -359,4 +357,29 @@ public class dependencyDiscoverer {
             }
         }
     }
-}   
+
+    /**
+      * Poison Pill class that will count how many threads are waiting
+      * (will be used for synchronization and to make sure that there are no
+      * race conditions)
+     */
+    private static class PoisonPill {
+        private int count;
+
+        public PoisonPill (int count) {
+            this.count = count;
+        }
+
+        public int getCount () {
+            return this.count;
+        }
+
+        public void resetCount () {
+            this.count = 0;
+        }
+
+        public void incrementCount () {
+            this.count++;
+        }
+    }
+}
