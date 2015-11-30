@@ -6,6 +6,13 @@
 //
 //////////////////////////////////////////////////////////////
 
+////////////////////////////////////////////////////////////////
+////                Name: Andrei-Mihai Nicolae              ////
+////                GUID: 2147392n                          ////
+////                Date: 29/11/2015                        ////
+////////////////////////////////////////////////////////////////
+
+
 import java.io.*;
 import java.util.*;
 
@@ -74,7 +81,7 @@ public class SVM {
 	   LOADC   =  4,
 	   ADD     =  6,  SUB     =  7,
 	   MUL     =  8,  DIV     =  9,
-	   CMPEQ   = 10,
+	   CMPEQ   = 10,  CMPEQCASE = 11,    //// EXTENSION
 	   CMPLT   = 12,  CMPGT   = 13,
 	   INV     = 14,  INC     = 15,
 	   HALT    = 16,  JUMP    = 17,
@@ -88,7 +95,7 @@ public class SVM {
 	   "LOADC   ",    "???     ",
 	   "ADD     ",    "SUB     ",
 	   "MUL     ",    "DIV     ",
-	   "CMPEQ   ",    "???     ",
+	   "CMPEQ   ",    "CMPEQCASE     ",   //// EXTENSION
 	   "CMPLT   ",    "CMPGT   ",
 	   "INV     ",    "INC     ",
 	   "HALT    ",    "JUMP    ",
@@ -237,6 +244,13 @@ public class SVM {
 					int w2 = data[--sp];
 					int w1 = data[--sp];
 					data[sp++] = (w1 > w2 ? 1 : 0);
+					break;
+				}
+				//// EXTENSION
+				case CMPEQCASE: {
+					int w2 = data[--sp];
+					int w1 = data[sp-1];
+					data[sp++] = (w1 == w2 ? 1 : 0);
 					break;
 				}
 				case INV: {

@@ -247,7 +247,6 @@ public class dependencyDiscoverer {
                 if (workQueueIter != null) {
                     LinkedList<String> ll = hashM.get(workQueueIter);
                     process(workQueueIter, ll);
-                    map.put(workQueueIter, ll);
 
                     // we reset the poisonPill in order to let other waiting threads know
                     // that there is at least one thread that has added some more elements in the work queue

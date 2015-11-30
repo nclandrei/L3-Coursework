@@ -10,7 +10,7 @@
 
 ////////////////////////////////////////////////////////////////
 ////                Name: Andrei-Mihai Nicolae              ////
-///                GUID: 2147392n                          ////
+////                GUID: 2147392n                          ////
 ////                Date: 08/11/2015                        ////
 ////////////////////////////////////////////////////////////////
 
@@ -69,7 +69,7 @@ com
 	|	WHILE expr COLON          
 		  seq_com DOT             # while
 
-//////// EXTENSION
+//////// BEGINNING OF EXTENSION
 
     |   SWITCH expr COLON        
             (fun_case)*
@@ -131,11 +131,13 @@ RETURN  :	'return' ;
 TRUE	:	'true' ;
 WHILE	:	'while' ;
 
-/// EXTENSION
+//// BEGINNING OF EXTENSION
 
 CASE    :	'case' ;
 SWITCH  :   'switch' ;
 DEFAULT :   'default' ;
+
+//// END OF EXTENSION
 
 EQ	:	'==' ;
 LT	:	'<' ;

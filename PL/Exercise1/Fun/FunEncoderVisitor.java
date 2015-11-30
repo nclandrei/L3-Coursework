@@ -8,15 +8,38 @@
 //
 //////////////////////////////////////////////////////////////
 
+////////////////////////////////////////////////////////////////
+////                Name: Andrei-Mihai Nicolae              ////
+////                GUID: 2147392n                          ////
+////                Date: 29/11/2015                        ////
+////////////////////////////////////////////////////////////////
+
+
+////////////////////////////////////////////////////////////////
+//                                                            //
+//     1) Evaluate the expression of the switch statement     //
+//     2) For each switch case:                               //
+// 	      * Evaluate guard                                    //
+// 	      * Use CMPEQCASE defined in SVM                      //
+// 	      * Use JUMPF defined in SVM to go to the next guard  //
+// 	      * Evaluate seq_com                                  //
+// 	      * Use JUMP defined in SVM to go to the end          //
+//     3) For the default switch statement:                   //
+// 	      * Evaluate seq_com                                  //
+//                                                            //
+////////////////////////////////////////////////////////////////
+
+
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.*;
 import org.antlr.v4.runtime.misc.*;
-
 import java.util.List;
+import java.util.ArrayList;
 
 public class FunEncoderVisitor extends AbstractParseTreeVisitor<Void> implements FunVisitor<Void> {
 
 	private SVM obj = new SVM();
+	private List<Integer> endCaseLocations;
 
 	private int globalvaraddr = 0;
 	private int localvaraddr = 0;
@@ -107,6 +130,7 @@ public class FunEncoderVisitor extends AbstractParseTreeVisitor<Void> implements
 	    for (FunParser.Var_declContext vd : var_decl)
 		visit(vd);
 	    visit(ctx.seq_com());
+	    visit(ctx.expr());
 	    obj.emit11(SVM.RETURN, 1);
 	    addrTable.exitLocalScope();
 	    currentLocale = Address.GLOBAL;
@@ -250,6 +274,65 @@ public class FunEncoderVisitor extends AbstractParseTreeVisitor<Void> implements
 	    obj.patch12(condaddr, exitaddr);
 	    return null;
 	}
+
+//// BEGINNING OF EXTENSION
+
+	/**
+	 * Visits a switch statement
+	 */
+	 public Void visitSwitch(FunParser.SwitchContext ctx) {
+	     visit(ctx.expr());
+	     List<FunParser.Fun_caseContext> cases = ctx.fun_case();
+	     endCaseLocations = new ArrayList<Integer>();
+	     for (FunParser.Fun_caseContext funCase : cases) {
+	     	visit(funCase);
+	     }
+
+	     visit(ctx.fun_default());
+
+	     int exitSwitch = obj.currentOffset();
+	     for (Integer i : endCaseLocations) {
+	     	obj.patch12(i, exitSwitch);
+	     }
+	     return null;
+	 }
+
+	 /**
+	  * Visits a case inside the switch statement
+	  */
+	 public Void visitFun_case(FunParser.Fun_caseContext ctx) {
+	 	switch (ctx.v1.getText()){
+	 		case "false":
+	 			obj.emit12(SVM.LOADC, 0);
+	 			break;
+	 		case "true":
+	 			obj.emit12(SVM.LOADC, 1);
+	 			break;
+	 		default:
+	 			int value = Integer.parseInt(ctx.NUM().getText());
+	 			obj.emit12(SVM.LOADC, value);
+	 			break;
+	 	}
+	 	obj.emit1(SVM.CMPEQCASE);
+	 	int guardLocation = obj.currentOffset();
+	 	obj.emit12(SVM.JUMPF, 0);
+	 	visit(ctx.seq_com());
+	 	endCaseLocations.add(obj.currentOffset());
+	 	obj.emit12(SVM.JUMP, 0);
+	 	int caseEnd = obj.currentOffset();
+	 	obj.patch12(guardLocation, caseEnd);
+	 	return null;
+	 }
+
+	 /**
+	  * Visits the default case of a switch statement
+	  */
+	 public Void visitFun_default(FunParser.Fun_defaultContext ctx) {
+	     visit(ctx.seq_com());
+	     return null;
+	 }
+
+//// END OF EXTENSION
 
 	/**
 	 * Visit a parse tree produced by the {@code seq}

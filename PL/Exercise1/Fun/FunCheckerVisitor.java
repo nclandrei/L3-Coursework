@@ -8,6 +8,14 @@
 //
 //////////////////////////////////////////////////////////////
 
+////////////////////////////////////////////////////////////////
+////                Name: Andrei-Mihai Nicolae              ////
+////                GUID: 2147392n                          ////
+////                Date: 29/11/2015                        ////
+////////////////////////////////////////////////////////////////
+
+
+
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.*;
 import org.antlr.v4.runtime.misc.*;
@@ -216,6 +224,8 @@ public class FunCheckerVisitor extends AbstractParseTreeVisitor<Type> implements
 	    for (FunParser.Var_declContext vd : var_decl)
 		visit(vd);
 	    visit(ctx.seq_com());
+	    Type returntype = visit(ctx.expr());
+   		checkType(t1, returntype, ctx);
 	    typeTable.exitLocalScope();
 	    define(ctx.ID().getText(), functype, ctx);
 	    return null;
@@ -328,8 +338,12 @@ public class FunCheckerVisitor extends AbstractParseTreeVisitor<Type> implements
 	    return null;
 	}
 
-//// Beginning of EXTENSION
+//// BEGINNING OF EXTENSION
 
+	/**
+	 * Visits a switch statement, checking if the guard has already been used
+	 * and also type checks each guard with the value used for switching
+	 */
     public Type visitSwitch(FunParser.SwitchContext ctx) {
         Type t = visit(ctx.expr());
         List<FunParser.Fun_caseContext> cases = ctx.fun_case();
@@ -349,6 +363,9 @@ public class FunCheckerVisitor extends AbstractParseTreeVisitor<Type> implements
         return null;
     }      
 
+    /**
+     * Visits a switch case, returning the type of the guard
+     */
     public Type visitFun_case(FunParser.Fun_caseContext ctx) {
         visit(ctx.seq_com());
         if (ctx.FALSE() != null || ctx.TRUE() != null) {
@@ -359,12 +376,15 @@ public class FunCheckerVisitor extends AbstractParseTreeVisitor<Type> implements
         } 
     }        
 
+    /**
+     * Visits the default case of a switch statement
+     */
     public Type visitFun_default(FunParser.Fun_defaultContext ctx) {
         visit(ctx.seq_com());
         return null;
     }      
 
-//// End of EXTENSION
+//// END OF EXTENSION
 
 	/**
 	 * Visit a parse tree produced by the {@code seq}
