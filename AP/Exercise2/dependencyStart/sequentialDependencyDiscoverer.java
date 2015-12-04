@@ -1,9 +1,10 @@
 /**
- *   Dependency discoverer in a multi-threaded environment
- *   Name: Andrei-Mihai Nicolae
- *   GUID: 2147392n
- *   This is my own work as defined in the Academic Ethics agreement I have
- *   signed.
+ * Sequential dependency discoverer
+ * Title of assignment: APH Exercise 2
+ * Name: Andrei-Mihai Nicolae
+ * GUID: 2147392n
+ * This is my own work as defined in the Academic Ethics agreement I have
+ * signed.
  *       
 */
 
@@ -12,7 +13,7 @@ import java.util.concurrent.*;
 import java.io.*;
 import java.lang.*;
 
-public class singleDepDiscoverer {
+public class sequentialDependencyDiscoverer {
 
     private static ArrayList<String> dir;
     private static ConcurrentHashMap<String, LinkedList<String>> hashM;
@@ -66,12 +67,12 @@ public class singleDepDiscoverer {
             String line = null;
             while ((line = br.readLine()) != null) {
                 int length = line.length();
-                if (line.compareTo("") == 0) {
-                    break;
+                if (length == 0) {
+                    continue;
                 }
                 int index = 0;
                 LinkedList<String> newLL;
-                while (line.charAt(index) == ' ') {
+                while (index < length && line.charAt(index) == ' ') {
                     ++index;
                 }
                 if (index > length-8 || line.substring(index, index+8).compareTo("#include") != 0) {
@@ -180,7 +181,6 @@ public class singleDepDiscoverer {
         while ((workQueueIter = workQueue.poll()) != null) {
             LinkedList<String> ll = hashM.get(workQueueIter);
             process(workQueueIter, ll);
-            hashM.put(workQueueIter, ll);
         }
         for (i = start; i < argsLen; ++i) {
             ConcurrentHashMap<String, LinkedList<String>> printed;

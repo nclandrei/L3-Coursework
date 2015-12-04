@@ -1,3 +1,3 @@
 #!/bin/bash
 
-javac dependencyDiscoverer.java
+javac *.java

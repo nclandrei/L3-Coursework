@@ -1,5 +1,6 @@
 /**
-  * Java dependency discoverer in a multi-threaded environment
+  * Multi-threaded dependency discoverer
+  * Title of assignment: APH Exercise 2
   * Name: Andrei-Mihai Nicolae
   * GUID: 2147392n
   * This is my own work as defined in the Academic Ethics agreement I have signed.
@@ -15,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.CyclicBarrier;
 
-public class dependencyDiscoverer {
+public class multiThreadedDepDiscoverer {
 
     private static ArrayList<String> dir;   // will store the directories in which we search for includes
     private static ConcurrentHashMap<String, LinkedList<String>> hashM;  // this is the "another structure", the master hashMap
@@ -217,7 +218,6 @@ public class dependencyDiscoverer {
 
         private LinkedBlockingQueue<String> queue;
         private ConcurrentHashMap<String, LinkedList<String>> map;
-        private int index;
 
         public Worker (LinkedBlockingQueue<String> queue, ConcurrentHashMap<String, LinkedList<String>> map) {
             this.map = map;
@@ -260,40 +260,37 @@ public class dependencyDiscoverer {
                 // if the first element in the queue is empty, then we need to make sure that this thread
                 // WAITS effectively until some other thread adds something in the queue
                 else {
-                    // we need to increment the pill such that we know we have another thread that found the 
-                    // queue empty
                     synchronized (poisonPill) {
+                        // we need to increment the pill such that we know we have another thread that found the 
+                        // queue empty
                         poisonPill.incrementCount();
-                    }
 
-                    // if all threads were waiting and the current thread is also attempting to wait
-                    // we then stop all of them and mark work as done
-                    if (poisonPill.getCount() >= numberOfThreads - 1) {
-                        synchronized (poisonPill) { 
+                        // if all threads were waiting and the current thread is also attempting to wait
+                        // we then stop all of them and mark work as done
+                        if (poisonPill.getCount() == numberOfThreads) {
                             done = true;
                             poisonPill.notifyAll();
+                            break;
                         }
-                        break;
-                    }
-
-                    // we are using done variable to avoid any race conditions
-                    // moreover, because we might have a thread trying to go inside the waiting state
-                    // exactly before done is made true, we also check that the count is smaller than
-                    // the total number of threads
-                    while (!done && poisonPill.getCount() < numberOfThreads) {
-                        try {
-                            synchronized (poisonPill) {
-                                // another thread in the waiting list -- waiting until notified
-                                poisonPill.wait();
-                                break;
+                        else {   
+                            // we are using done variable to avoid any race conditions;
+                            // moreover, because we might have a thread trying to go inside the waiting state
+                            // exactly before done is made true, we also check that the count is smaller than
+                            // the total number of threads
+                            while (!done && poisonPill.getCount() < numberOfThreads) {
+                                try {
+                                    // another thread in the waiting list -- waiting until notified
+                                    poisonPill.wait();
+                                    break;
+                                }
+                                catch (InterruptedException e) {
+                                    e.printStackTrace();
+                                }
                             }
                         }
-                        catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
                     }
-		        }
-	        }
+                }
+            }
         }
 
         /*
