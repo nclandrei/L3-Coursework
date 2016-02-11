@@ -345,6 +345,9 @@ list_directory_contents(int fd, char *filename, int id)
 		  "<body>\r\n"
 		  "<ul>\r\n%s%s", strlen(contents) + 25 + 79, contents, end);
   
+  free(contents);
+  free(end);
+  
   return send_response(fd, buffer, strlen(buffer));
 }
 
