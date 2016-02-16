@@ -64,7 +64,7 @@ ORDER BY Band_Name;
 
 
 -- Query 7: we get all releases' years (which are not null) and SELECT the bands' names that have all releases 
---          launched after 1999
+--          launched after 1999 (excluding 1999)
 
 SELECT DISTINCT b.name
 FROM bands b
@@ -73,6 +73,7 @@ WHERE 1999 < ALL (SELECT year
 		  WHERE b.bid=r.bid AND year IS NOT NULL);
 
 -- Query 8: we get all realeases' years (not null) and then SELECT bands' names that have at least one release launched since 2011
+--          (including 2011)
 
 SELECT DISTINCT b.name
 FROM bands b
