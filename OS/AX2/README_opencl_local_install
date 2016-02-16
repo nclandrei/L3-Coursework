@@ -1,0 +1,8 @@
+# Download the AMD OpenCL SDK 64 bit from http://developer.amd.com/tools-and-sdks/opencl-zone/amd-accelerated-parallel-processing-app-sdk/
+# unpack the archive
+$ tar -jxf AMD-APP-SDKInstaller-v3.0.130.135-GA-linux64.tar.bz2
+# run the installer and choose the defaults
+$ ./AMD-APP-SDK-v3.0.130.135-GA-linux64.sh
+# Now you can use the provided Makefile, testbench and driver code skeletons and kernel source to build your OpenCL application.
+
+
