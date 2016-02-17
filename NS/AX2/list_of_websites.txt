@@ -4,3 +4,6 @@ www.mobile.de
 www.reuters.com
 www.epfl.ch
 www.gumtree.com
+www.gla.ac.uk
+www.vim.org
+www.jurnalul.ro

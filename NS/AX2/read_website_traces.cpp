@@ -1,3 +1,8 @@
+/**
+  * File that reads a txt file and outputs IP addresses accordingly to
+  * dot program rules 
+ */
+
 #include <iostream>
 #include <fstream>
 #include <cstring>
