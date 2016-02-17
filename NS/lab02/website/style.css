@@ -1,0 +1,40 @@
+
+HTML {
+  margin:                               0px;
+  padding:                              0px;
+  height:                              100%;
+}
+
+BODY {
+  height:                              100%;
+  background-color:                 #dde5f7;
+  color:                            #707070;
+  padding:                              0px;
+  margin:                               0px;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size:                           11pt;
+  font-weight:                       normal;
+  line-height:                        1.4em;
+  text-align:                          left;
+  hyphens:                             auto;
+  -webkit-hyphens:                     auto;
+  -moz-hyphens:                        auto;
+  padding-left:                        3em;
+  padding-right:                       3em;
+  padding-top:                         1em;
+  padding-bottom:                      1em;
+}
+
+H1 {
+  margin:                                0;
+  font-size:                         1.5em;
+  font-weight:                        bold;
+  color:                           #606060;
+}
+
+IMG {
+  margin-top:                          1em;
+  margin-bottom:                       1em;
+  box-shadow:             3px 3px 8px #222;
+}
+
