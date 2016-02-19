@@ -1,0 +1,1 @@
+*.class build/* j2meclasses/* .classpath .project .settings *.war *~ *.lock *.DS_Store *.swp *.out *.bak *.tmp *.log log*.txt .idea .git
