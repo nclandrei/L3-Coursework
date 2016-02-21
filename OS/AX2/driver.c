@@ -208,22 +208,23 @@ int run_driver(CLObject* ocl,unsigned int buffer_size,  int* input_buffer_1, int
 
     // Create the buffer objects to link the input and output arrays in device memory to the buffers in host memory
     
-    input1 = clCreateBuffer (context, CL_MEM_READ_ONLY, buffer_size * size_of(unsigned int), NULL, &err);
-    input2 = clCreateBuffer (context, CL_MEM_READ_ONLY, buffer_size * size_of(unsigned int), NULL, &err);
+    input1 = clCreateBuffer (ocl->context, CL_MEM_READ_ONLY, buffer_size * sizeof(unsigned int), NULL, &err);
+    input2 = clCreateBuffer (ocl->context, CL_MEM_READ_ONLY, buffer_size * sizeof(unsigned int), NULL, &err);
    
-    output = clCreateBuffer (context, CL_MEM_WRITE_ONLY, NULL, &err);
-    status_buf = clCreateBuffer(context, CL_MEM_WRITE_ONLY, NULL, &err);
+    output = clCreateBuffer (ocl->context, CL_MEM_WRITE_ONLY, buffer_size * sizeof(unsigned int), NULL, &err);
+    status_buf = clCreateBuffer(ocl->context, CL_MEM_WRITE_ONLY, NULL, 1 * sizeof(unsigned int), &err);
   
     // Write the data in input arrays into the device memory 
  
-    [YOUR CODE HERE]
+    err = clEnqueueWriteBuffer (ocl->command_queue, input1, CL_TRUE, 0, buffer_size * sizeof(unsigned int), input_buffer_1, 0, NULL, NULL);
+    err = clEnqueueWriteBuffer (ocl->command_queue, input2, CL_TRUE, 0, buffer_size * sizeof(unsigned int), input_buffer_2, 0, NULL, NULL);
   
     // Set the arguments to our compute kernel
     
-    err = clSetKernelArg(kernel, 0, size_of(cl_mem), &input1);
-    err = clSetKernelArg(kernel, 1, size_of(cl_mem), &input2);
-    err = clSetKernelArg(kernel, 2, size_of(cl_mem), &output);
-    err = clSetKernelArg(kernel, 3, size_of(cl_mem), &status_buf);
+    err = clSetKernelArg(ocl->kernel, 0, sizeof(cl_mem), &input1);
+    err = clSetKernelArg(ocl->kernel, 1, sizeof(cl_mem), &input2);
+    err = clSetKernelArg(ocl->kernel, 2, sizeof(cl_mem), &output);
+    err = clSetKernelArg(ocl->kernel, 3, sizeof(cl_mem), &status_buf);
 
     if (err != CL_SUCCESS) {
          fprintf(stderr,"Error: Failed to set kernel arguments! %d\n", err);
@@ -233,7 +234,7 @@ int run_driver(CLObject* ocl,unsigned int buffer_size,  int* input_buffer_1, int
   
     // Execute the kernel, i.e. tell the device to process the data using the given global and local ranges
  
-    err = clEnqueueNDRangeKernel(command_queue, kernel, 1, NULL, &global, &local, 0, NULL, NULL);
+    err = clEnqueueNDRangeKernel(ocl->command_queue, ocl->kernel, 1, NULL, &global, &local, 0, NULL, NULL);
     if (err != CL_SUCCESS) {
          fprintf(stderr,"Error: Failed to execute the kernel! %d\n", err);
          exit(EXIT_FAILURE);
@@ -241,16 +242,22 @@ int run_driver(CLObject* ocl,unsigned int buffer_size,  int* input_buffer_1, int
   
     // Wait for the command commands to get serviced before reading back results. This is the device sending an interrupt to the host    
     
-    clFinish(command_queue);
+    clFinish(ocl->command_queue);
 
     // Check the status
 
-    [YOUR CODE HERE]
+    //err = clEnqueueReadBuffer (command_queue, status_buf, CL_TRUE, 0, buffer_size * sizeof(unsigned int), 
   
     // When the status is 0, read back the results from the device to verify the output
    
-    [YOUR CODE HERE]
-  
+    if (err == CL_SUCCESS) {
+        err = clEnqueueReadBuffer(ocl->command_queue, output, CL_TRUE, 0, buffer_size * sizeof(unsigned int), output_buffer, 0, NULL, NULL);
+    }  
+    else {
+        fprintf(stderr, "Error: Failed to return results from device! %d\n", err);
+	exit(EXIT_FAILURE);
+    }
+
     // Shutdown and cleanup
     
     shutdown_driver(ocl);
