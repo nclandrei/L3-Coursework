@@ -131,8 +131,7 @@ CLObject* init_driver() {
 
 //===============================================================================================================================================================  
 // START of assignment code section 
-    [YOUR CODE HERE]
-
+   ocl->status = (void *) status; 
 // END of assignment code section 
 //===============================================================================================================================================================  
     
@@ -162,7 +161,11 @@ int shutdown_driver(CLObject* ocl) {
      }
 //===============================================================================================================================================================  
 // START of assignment code section      
-    [YOUR CODE HERE]    
+   err = clReleaseDevice(ocl->device_id);
+    if (err != CL_SUCCESS) {
+	    fprintf(stderr, "Error: Failed to release Device: %d!\n", err);
+        exit(EXIT_FAILURE);
+    }
 // END of assignment code section 
 //===============================================================================================================================================================  
      
@@ -205,7 +208,11 @@ int run_driver(CLObject* ocl,unsigned int buffer_size,  int* input_buffer_1, int
 
     // Create the buffer objects to link the input and output arrays in device memory to the buffers in host memory
     
-    [YOUR CODE HERE]
+    input1 = clCreateBuffer (context, CL_MEM_READ_ONLY, buffer_size * size_of(unsigned int), NULL, &err);
+    input2 = clCreateBuffer (context, CL_MEM_READ_ONLY, buffer_size * size_of(unsigned int), NULL, &err);
+   
+    output = clCreateBuffer (context, CL_MEM_WRITE_ONLY, NULL, &err);
+    status_buf = clCreateBuffer(context, CL_MEM_WRITE_ONLY, NULL, &err);
   
     // Write the data in input arrays into the device memory 
  
@@ -213,7 +220,10 @@ int run_driver(CLObject* ocl,unsigned int buffer_size,  int* input_buffer_1, int
   
     // Set the arguments to our compute kernel
     
-    [YOUR CODE HERE]
+    err = cl
+    err = cl
+    err = cl
+    err = cl
   
     // Execute the kernel, i.e. tell the device to process the data using the given global and local ranges
  
