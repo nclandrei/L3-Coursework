@@ -224,14 +224,24 @@ int run_driver(CLObject* ocl,unsigned int buffer_size,  int* input_buffer_1, int
     err = clSetKernelArg(kernel, 1, size_of(cl_mem), &input2);
     err = clSetKernelArg(kernel, 2, size_of(cl_mem), &output);
     err = clSetKernelArg(kernel, 3, size_of(cl_mem), &status_buf);
+
+    if (err != CL_SUCCESS) {
+         fprintf(stderr,"Error: Failed to set kernel arguments! %d\n", err);
+         exit(EXIT_FAILURE);
+    }
+   
   
     // Execute the kernel, i.e. tell the device to process the data using the given global and local ranges
  
-    [YOUR CODE HERE]
+    err = clEnqueueNDRangeKernel(command_queue, kernel, 1, NULL, &global, &local, 0, NULL, NULL);
+    if (err != CL_SUCCESS) {
+         fprintf(stderr,"Error: Failed to execute the kernel! %d\n", err);
+         exit(EXIT_FAILURE);
+    }
   
     // Wait for the command commands to get serviced before reading back results. This is the device sending an interrupt to the host    
     
-    [YOUR CODE HERE]
+    clFinish(command_queue);
 
     // Check the status
 
