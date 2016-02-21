@@ -220,10 +220,10 @@ int run_driver(CLObject* ocl,unsigned int buffer_size,  int* input_buffer_1, int
   
     // Set the arguments to our compute kernel
     
-    err = cl
-    err = cl
-    err = cl
-    err = cl
+    err = clSetKernelArg(kernel, 0, size_of(cl_mem), &input1);
+    err = clSetKernelArg(kernel, 1, size_of(cl_mem), &input2);
+    err = clSetKernelArg(kernel, 2, size_of(cl_mem), &output);
+    err = clSetKernelArg(kernel, 3, size_of(cl_mem), &status_buf);
   
     // Execute the kernel, i.e. tell the device to process the data using the given global and local ranges
  
@@ -243,7 +243,11 @@ int run_driver(CLObject* ocl,unsigned int buffer_size,  int* input_buffer_1, int
   
     // Shutdown and cleanup
     
-    [YOUR CODE HERE]
+    shutdown_driver(ocl);
+    clReleaseMemObject(input1);
+    clReleaseMemObject(input2); 
+    clReleaseMemObject(output); 
+    clReleaseMemObject(status_buf); 
   
 // END of assignment code section 
 //===============================================================================================================================================================  
