@@ -131,7 +131,7 @@ CLObject* init_driver() {
 
 //===============================================================================================================================================================  
 // START of assignment code section 
-   ocl->status = (void *) status; 
+
 // END of assignment code section 
 //===============================================================================================================================================================  
     
@@ -212,19 +212,29 @@ int run_driver(CLObject* ocl,unsigned int buffer_size,  int* input_buffer_1, int
     input2 = clCreateBuffer (ocl->context, CL_MEM_READ_ONLY, buffer_size * sizeof(unsigned int), NULL, &err);
    
     output = clCreateBuffer (ocl->context, CL_MEM_WRITE_ONLY, buffer_size * sizeof(unsigned int), NULL, &err);
-    status_buf = clCreateBuffer(ocl->context, CL_MEM_WRITE_ONLY, NULL, 1 * sizeof(unsigned int), &err);
+//    status_buf = clCreateBuffer(ocl->context, CL_MEM_WRITE_ONLY, NULL, 1 * sizeof(unsigned int), &err);
   
+    if (!input1 || !input2 || !output) {
+	fprintf(stderr, "Failed to allocate device memory!\n");
+	exit(EXIT_FAILURE);
+    }
+        
     // Write the data in input arrays into the device memory 
  
     err = clEnqueueWriteBuffer (ocl->command_queue, input1, CL_TRUE, 0, buffer_size * sizeof(unsigned int), input_buffer_1, 0, NULL, NULL);
     err = clEnqueueWriteBuffer (ocl->command_queue, input2, CL_TRUE, 0, buffer_size * sizeof(unsigned int), input_buffer_2, 0, NULL, NULL);
-  
+ 
+    if (err != CL_SUCCESS) {
+	fprintf(stderr, "Failed to write to source arrays!%d\n", err);
+ 	exit(EXIT_FAILURE);
+    }
+
     // Set the arguments to our compute kernel
     
     err = clSetKernelArg(ocl->kernel, 0, sizeof(cl_mem), &input1);
     err = clSetKernelArg(ocl->kernel, 1, sizeof(cl_mem), &input2);
     err = clSetKernelArg(ocl->kernel, 2, sizeof(cl_mem), &output);
-    err = clSetKernelArg(ocl->kernel, 3, sizeof(cl_mem), &status_buf);
+//    err = clSetKernelArg(ocl->kernel, 3, sizeof(cl_mem), &status_buf);
 
     if (err != CL_SUCCESS) {
          fprintf(stderr,"Error: Failed to set kernel arguments! %d\n", err);
