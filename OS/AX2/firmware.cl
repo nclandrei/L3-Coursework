@@ -10,10 +10,6 @@ if (i==0) {
   *status=0;
 }
    if(i < count) {
-    if (i!=0) {       
-        output[i]=-1;
-    } else {
        output[i] = input1[i] * input2[i];
-    }
    }
 } 

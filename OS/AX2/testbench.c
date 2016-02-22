@@ -71,7 +71,7 @@ int main(int argc, char *argv[]) {
     int st;
     struct thread_info *tinfo;
 //    pthread_attr_t attr;
-    unsigned int num_threads = NTH;
+    unsigned int num_threads = 1;
 
     /* Initialize thread creation attributes */
 //    st = pthread_attr_init(&attr);

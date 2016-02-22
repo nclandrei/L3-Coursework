@@ -130,7 +130,7 @@ CLObject* init_driver() {
 
 //===============================================================================================================================================================  
 // START of assignment code section 
-    ocl->status = (&status);
+//    ocl->status = (&status);
 // END of assignment code section 
 //===============================================================================================================================================================  
     
@@ -236,7 +236,7 @@ int run_driver(CLObject* ocl,unsigned int buffer_size,  int* input_buffer_1, int
     err |= clSetKernelArg(ocl->kernel, 1, sizeof(cl_mem), &input2);
     err |= clSetKernelArg(ocl->kernel, 2, sizeof(cl_mem), &output);
     err |= clSetKernelArg(ocl->kernel, 3, sizeof(cl_mem), &status_buf);
-    err |= clSetKernelArg(ocl->kernel, 4, sizeof(unsigned int), &max_iters);
+    err |= clSetKernelArg(ocl->kernel, 4, sizeof(unsigned int), &buffer_size);
 
     if (err != CL_SUCCESS) {
          fprintf(stderr,"Error: Failed to set kernel arguments! %d\n", err);
@@ -264,15 +264,14 @@ int run_driver(CLObject* ocl,unsigned int buffer_size,  int* input_buffer_1, int
     }
   
     // When the status is 0, read back the results from the device to verify the output
-   
-    if (status == 0) {
+    if (status[0] == 0) { 
         err = clEnqueueReadBuffer (ocl->command_queue, output, CL_TRUE, 0, buffer_size * sizeof(int), output_buffer, 0, NULL, NULL);
         if (err != CL_SUCCESS) {
 	    fprintf(stderr, "Error: Failed to read back the output array!%d\n", err);
 	    exit(EXIT_FAILURE);
 	}
-    }    
- 
+    }
+     
     // Shutdown and cleanup
     
     clReleaseMemObject(input1);
