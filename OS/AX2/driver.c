@@ -36,7 +36,6 @@ CLObject* init_driver() {
     if (err != CL_SUCCESS) {
         fprintf(stderr,"Error: Failed to get number of platform: %d!\n", err);
         exit(EXIT_FAILURE);
-
     }
 
     // Now ask OpenCL for the platform IDs:
@@ -131,7 +130,7 @@ CLObject* init_driver() {
 
 //===============================================================================================================================================================  
 // START of assignment code section 
-
+    ocl->status = (&status);
 // END of assignment code section 
 //===============================================================================================================================================================  
     
@@ -208,21 +207,22 @@ int run_driver(CLObject* ocl,unsigned int buffer_size,  int* input_buffer_1, int
 
     // Create the buffer objects to link the input and output arrays in device memory to the buffers in host memory
     
-    input1 = clCreateBuffer (ocl->context, CL_MEM_READ_ONLY, buffer_size * sizeof(unsigned int), NULL, &err);
-    input2 = clCreateBuffer (ocl->context, CL_MEM_READ_ONLY, buffer_size * sizeof(unsigned int), NULL, &err);
+    input1 = clCreateBuffer (ocl->context, CL_MEM_READ_ONLY, buffer_size * sizeof(int), NULL, &err);
+    input2 = clCreateBuffer (ocl->context, CL_MEM_READ_ONLY, buffer_size * sizeof(int), NULL, &err);
    
-    output = clCreateBuffer (ocl->context, CL_MEM_WRITE_ONLY, buffer_size * sizeof(unsigned int), NULL, &err);
-//    status_buf = clCreateBuffer(ocl->context, CL_MEM_WRITE_ONLY, NULL, 1 * sizeof(unsigned int), &err);
+    output = clCreateBuffer (ocl->context, CL_MEM_WRITE_ONLY, buffer_size * sizeof(int), NULL, &err);
+    status_buf = clCreateBuffer(ocl->context, CL_MEM_WRITE_ONLY, sizeof(unsigned int), NULL, &err);
+    
   
-    if (!input1 || !input2 || !output) {
+    if (!input1 || !input2 || !output || !status_buf) {
 	fprintf(stderr, "Failed to allocate device memory!\n");
 	exit(EXIT_FAILURE);
     }
         
     // Write the data in input arrays into the device memory 
  
-    err = clEnqueueWriteBuffer (ocl->command_queue, input1, CL_TRUE, 0, buffer_size * sizeof(unsigned int), input_buffer_1, 0, NULL, NULL);
-    err = clEnqueueWriteBuffer (ocl->command_queue, input2, CL_TRUE, 0, buffer_size * sizeof(unsigned int), input_buffer_2, 0, NULL, NULL);
+    err = clEnqueueWriteBuffer (ocl->command_queue, input1, CL_TRUE, 0, buffer_size * sizeof(int), input_buffer_1, 0, NULL, NULL);
+    err = clEnqueueWriteBuffer (ocl->command_queue, input2, CL_TRUE, 0, buffer_size * sizeof(int), input_buffer_2, 0, NULL, NULL);
  
     if (err != CL_SUCCESS) {
 	fprintf(stderr, "Failed to write to source arrays!%d\n", err);
@@ -231,10 +231,12 @@ int run_driver(CLObject* ocl,unsigned int buffer_size,  int* input_buffer_1, int
 
     // Set the arguments to our compute kernel
     
-    err = clSetKernelArg(ocl->kernel, 0, sizeof(cl_mem), &input1);
-    err = clSetKernelArg(ocl->kernel, 1, sizeof(cl_mem), &input2);
-    err = clSetKernelArg(ocl->kernel, 2, sizeof(cl_mem), &output);
-//    err = clSetKernelArg(ocl->kernel, 3, sizeof(cl_mem), &status_buf);
+    err = 0;
+    err |= clSetKernelArg(ocl->kernel, 0, sizeof(cl_mem), &input1);
+    err |= clSetKernelArg(ocl->kernel, 1, sizeof(cl_mem), &input2);
+    err |= clSetKernelArg(ocl->kernel, 2, sizeof(cl_mem), &output);
+    err |= clSetKernelArg(ocl->kernel, 3, sizeof(cl_mem), &status_buf);
+    err |= clSetKernelArg(ocl->kernel, 4, sizeof(unsigned int), &max_iters);
 
     if (err != CL_SUCCESS) {
          fprintf(stderr,"Error: Failed to set kernel arguments! %d\n", err);
@@ -249,28 +251,30 @@ int run_driver(CLObject* ocl,unsigned int buffer_size,  int* input_buffer_1, int
          fprintf(stderr,"Error: Failed to execute the kernel! %d\n", err);
          exit(EXIT_FAILURE);
     }
-  
     // Wait for the command commands to get serviced before reading back results. This is the device sending an interrupt to the host    
-    
+ 
     clFinish(ocl->command_queue);
 
     // Check the status
 
-    //err = clEnqueueReadBuffer (command_queue, status_buf, CL_TRUE, 0, buffer_size * sizeof(unsigned int), 
+    err = clEnqueueReadBuffer (ocl->command_queue, status_buf, CL_TRUE, 0, sizeof(unsigned int), status, 0, NULL, NULL);
+    if (err != CL_SUCCESS) {
+	fprintf(stderr, "Error: Failed to read back the status!%d\n", err);
+	exit(EXIT_FAILURE);
+    }
   
     // When the status is 0, read back the results from the device to verify the output
    
-    if (err == CL_SUCCESS) {
-        err = clEnqueueReadBuffer(ocl->command_queue, output, CL_TRUE, 0, buffer_size * sizeof(unsigned int), output_buffer, 0, NULL, NULL);
-    }  
-    else {
-        fprintf(stderr, "Error: Failed to return results from device! %d\n", err);
-	exit(EXIT_FAILURE);
-    }
-
+    if (status == 0) {
+        err = clEnqueueReadBuffer (ocl->command_queue, output, CL_TRUE, 0, buffer_size * sizeof(int), output_buffer, 0, NULL, NULL);
+        if (err != CL_SUCCESS) {
+	    fprintf(stderr, "Error: Failed to read back the output array!%d\n", err);
+	    exit(EXIT_FAILURE);
+	}
+    }    
+ 
     // Shutdown and cleanup
     
-    shutdown_driver(ocl);
     clReleaseMemObject(input1);
     clReleaseMemObject(input2); 
     clReleaseMemObject(output); 
