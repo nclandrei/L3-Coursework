@@ -130,7 +130,11 @@ CLObject* init_driver() {
 
 //===============================================================================================================================================================  
 // START of assignment code section 
-//    ocl->status = (&status);
+    ocl->status = status[0];
+    err = pthread_mutex_init(&ocl->device_lock, NULL);
+    if (err != 0) {
+        fprintf(stderr, "Error: Failed to initialize mutex lock!%d\n", err);
+    }
 // END of assignment code section 
 //===============================================================================================================================================================  
     
@@ -231,12 +235,14 @@ int run_driver(CLObject* ocl,unsigned int buffer_size,  int* input_buffer_1, int
 
     // Set the arguments to our compute kernel
     
+    pthread_mutex_lock(&ocl->device_lock);
     err = 0;
     err |= clSetKernelArg(ocl->kernel, 0, sizeof(cl_mem), &input1);
     err |= clSetKernelArg(ocl->kernel, 1, sizeof(cl_mem), &input2);
     err |= clSetKernelArg(ocl->kernel, 2, sizeof(cl_mem), &output);
     err |= clSetKernelArg(ocl->kernel, 3, sizeof(cl_mem), &status_buf);
     err |= clSetKernelArg(ocl->kernel, 4, sizeof(unsigned int), &buffer_size);
+    pthread_mutex_unlock(&ocl->device_lock);    
 
     if (err != CL_SUCCESS) {
          fprintf(stderr,"Error: Failed to set kernel arguments! %d\n", err);

@@ -30,6 +30,7 @@ void* thread_start(void *vtinfo) {
     printf("Thread %llu started\n", tinfo->thread_num);
 #endif
     const unsigned int mSize = BUF_SZ;
+
     // Create the data sets   
     int* mA=(int*)malloc(sizeof(int)*mSize);
     int* mB=(int*)malloc(sizeof(int)*mSize);
@@ -71,7 +72,7 @@ int main(int argc, char *argv[]) {
     int st;
     struct thread_info *tinfo;
 //    pthread_attr_t attr;
-    unsigned int num_threads = 1;
+    unsigned int num_threads = NTH;
 
     /* Initialize thread creation attributes */
 //    st = pthread_attr_init(&attr);
