@@ -163,7 +163,12 @@ int shutdown_driver(CLObject* ocl) {
      }
 //===============================================================================================================================================================  
 // START of assignment code section      
-   err = clReleaseDevice(ocl->device_id);
+    err = pthread_mutex_destroy(ocl->device_lock, NULL);
+    if (err != 0) {
+        fprintf(stderr, "Error: Failed to destroy CLObject's mutex!%d\n", err);
+        exit(EXIT_FAILURE);
+    }
+    err = clReleaseDevice(ocl->device_id);
     if (err != CL_SUCCESS) {
 	    fprintf(stderr, "Error: Failed to release Device: %d!\n", err);
         exit(EXIT_FAILURE);
