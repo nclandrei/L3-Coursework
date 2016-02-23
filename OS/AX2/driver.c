@@ -130,7 +130,6 @@ CLObject* init_driver() {
 
 //===============================================================================================================================================================  
 // START of assignment code section 
-    ocl->status = status[0];
     err = pthread_mutex_init(&ocl->device_lock, NULL);
     if (err != 0) {
         fprintf(stderr, "Error: Failed to initialize mutex lock!%d\n", err);
@@ -234,6 +233,8 @@ int run_driver(CLObject* ocl,unsigned int buffer_size,  int* input_buffer_1, int
     }
 
     // Set the arguments to our compute kernel
+    // (this is the only OpenCL API call that is not thread-safe,
+    // therefore we need to use pthread mutual exclusion)
     
     pthread_mutex_lock(&ocl->device_lock);
     err = 0;
@@ -276,6 +277,11 @@ int run_driver(CLObject* ocl,unsigned int buffer_size,  int* input_buffer_1, int
 	    fprintf(stderr, "Error: Failed to read back the output array!%d\n", err);
 	    exit(EXIT_FAILURE);
 	}
+    }
+    else {
+#if VERBOSE_MT>3
+	printf("Status is %d, thus we have did not populate output buffer!\n", status[0]);
+#endif        
     }
      
     // Shutdown and cleanup
