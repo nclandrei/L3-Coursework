@@ -163,7 +163,7 @@ int shutdown_driver(CLObject* ocl) {
      }
 //===============================================================================================================================================================  
 // START of assignment code section      
-    err = pthread_mutex_destroy(ocl->device_lock, NULL);
+    err = pthread_mutex_destroy(&ocl->device_lock);
     if (err != 0) {
         fprintf(stderr, "Error: Failed to destroy CLObject's mutex!%d\n", err);
         exit(EXIT_FAILURE);
@@ -219,11 +219,11 @@ int run_driver(CLObject* ocl,unsigned int buffer_size,  int* input_buffer_1, int
     input2 = clCreateBuffer (ocl->context, CL_MEM_READ_ONLY, buffer_size * sizeof(int), NULL, &err);
    
     output = clCreateBuffer (ocl->context, CL_MEM_WRITE_ONLY, buffer_size * sizeof(int), NULL, &err);
-    status_buf = clCreateBuffer(ocl->context, CL_MEM_WRITE_ONLY, sizeof(unsigned int), NULL, &err);
+    status_buf = clCreateBuffer(ocl->context, CL_MEM_WRITE_ONLY, sizeof(int), NULL, &err);
     
   
     if (!input1 || !input2 || !output || !status_buf) {
-	fprintf(stderr, "Failed to allocate device memory!\n");
+	fprintf(stderr, "Failed to allocate device memory!%d\n", err);
 	exit(EXIT_FAILURE);
     }
         
@@ -247,7 +247,7 @@ int run_driver(CLObject* ocl,unsigned int buffer_size,  int* input_buffer_1, int
     err |= clSetKernelArg(ocl->kernel, 1, sizeof(cl_mem), &input2);
     err |= clSetKernelArg(ocl->kernel, 2, sizeof(cl_mem), &output);
     err |= clSetKernelArg(ocl->kernel, 3, sizeof(cl_mem), &status_buf);
-    err |= clSetKernelArg(ocl->kernel, 4, sizeof(unsigned int), &buffer_size);
+    err |= clSetKernelArg(ocl->kernel, 4, sizeof(const unsigned int), &buffer_size);
     pthread_mutex_unlock(&ocl->device_lock);    
 
     if (err != CL_SUCCESS) {
@@ -257,7 +257,7 @@ int run_driver(CLObject* ocl,unsigned int buffer_size,  int* input_buffer_1, int
    
   
     // Execute the kernel, i.e. tell the device to process the data using the given global and local ranges
- 
+
     err = clEnqueueNDRangeKernel(ocl->command_queue, ocl->kernel, 1, NULL, &global, &local, 0, NULL, NULL);
     if (err != CL_SUCCESS) {
          fprintf(stderr,"Error: Failed to execute the kernel! %d\n", err);
@@ -267,9 +267,15 @@ int run_driver(CLObject* ocl,unsigned int buffer_size,  int* input_buffer_1, int
  
     clFinish(ocl->command_queue);
 
-    // Check the status
+    // Check the status (try max_iters times until the status is equal to 0)
 
-    err = clEnqueueReadBuffer (ocl->command_queue, status_buf, CL_TRUE, 0, sizeof(unsigned int), status, 0, NULL, NULL);
+    int i;
+    for (i = 0; i < max_iters; ++i) {
+    	err = clEnqueueReadBuffer (ocl->command_queue, status_buf, CL_TRUE, 0, sizeof(int), &status, 0, NULL, NULL);
+	if (status[0] == 0) {
+	    break;
+	}
+    }
     if (err != CL_SUCCESS) {
 	fprintf(stderr, "Error: Failed to read back the status!%d\n", err);
 	exit(EXIT_FAILURE);
@@ -284,8 +290,8 @@ int run_driver(CLObject* ocl,unsigned int buffer_size,  int* input_buffer_1, int
 	}
     }
     else {
-#if VERBOSE_MT>3
-	printf("Status is %d, thus we have did not populate output buffer!\n", status[0]);
+#ifdef VERBOSE_MT
+	printf("Status is %d, thus we did not populate output buffer! Returning only status!\n", status[0]);
 #endif        
     }
      

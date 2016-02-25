@@ -59,6 +59,11 @@ void* thread_start(void *vtinfo) {
     }
     free(mCref);
     printf("Computed '%d/%d' correct values in thread %llu, %s!\n",correct,mSize,tinfo->thread_num, (correct == mSize) ? "SUCCESS" : "FAILURE");
+    if (correct != mSize) {
+	printf("Output value for FAILURE: %d %d %d\n", mC[0], mC[1], mC[20]);
+	printf("First input first value for FAILURE: %d\n",mA[0]);
+	printf("Second input first value for FAILURE: %d\n", mB[0]);
+    }
     free(mA);
     free(mB);
     free(mC);
