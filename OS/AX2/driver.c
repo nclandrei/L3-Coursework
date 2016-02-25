@@ -225,7 +225,7 @@ int run_driver(CLObject* ocl,unsigned int buffer_size,  int* input_buffer_1, int
     // Write the data in input arrays into the device memory 
  
     err = clEnqueueWriteBuffer (ocl->command_queue, input1, CL_TRUE, 0, buffer_size * sizeof(int), input_buffer_1, 0, NULL, NULL);
-    err = clEnqueueWriteBuffer (ocl->command_queue, input2, CL_TRUE, 0, buffer_size * sizeof(int), input_buffer_2, 0, NULL, NULL);
+    err |= clEnqueueWriteBuffer (ocl->command_queue, input2, CL_TRUE, 0, buffer_size * sizeof(int), input_buffer_2, 0, NULL, NULL);
  
     if (err != CL_SUCCESS) {
 	fprintf(stderr, "Failed to write to source arrays!%d\n", err);
