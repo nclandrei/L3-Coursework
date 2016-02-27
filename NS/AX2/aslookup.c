@@ -118,6 +118,7 @@ static int addr_matches_prefix(char *addr, char *prefix) {
 
 int main (int argc, char *argv[]) {  
     char *line = malloc (1000);
+    printf("aaa");
     struct as *autnums = load_autnums();
     //struct as_info *info = malloc(sizeof(struct as_info));
 
@@ -129,6 +130,7 @@ int main (int argc, char *argv[]) {
 
     while ((line = fgets(line, LINE_SIZE, rib_file)) != NULL) {
         //info = extract_info(line);
+        printf("%s \n", line);
 /*            if prefix != previous prefix {
                 save prefix and AS number in hash table, indexed by first octet of prefix
             }
