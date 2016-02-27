@@ -11,6 +11,7 @@ struct as {
     struct as *next;
 };
 
+
 static struct as * load_autnums(void) {
     struct as *head = NULL;
     FILE *inf = fopen("autnums.html", "r");
@@ -38,7 +39,19 @@ static struct as * load_autnums(void) {
     return head;
 }
 
+/*static struct as_info *extract_info (char *line) {
+    struct as_info *info = malloc(sizeof(struct as_info));
+    char *pref = malloc(15);
+    int as_num;
+    printf("am ajuns aici\n");
+    sscanf(line, "TABLE_DUMP2|%*s %*s|%*s|%*s|%*s|%s|%*d %*d %d|%*s", pref, &as_num);
+    info->prefix = pref;
+    info->as_num = as_num;
+    printf("%s --- %d\n", pref, as_num);
 
+    return info;
+}
+*/
 
 static void bytes_to_bitmap(int byte, char *bitmap) {
     int offset = 0;
@@ -64,7 +77,7 @@ static int addr_matches_prefix(char *addr, char *prefix) {
     // Parse the address:
     int addr_bytes[4];
     char addr_bitmap[32+1];
-    sprintf(addr_bitmap, "");
+    sprintf(addr_bitmap, "                                          ");
     if (sscanf(addr, "%d.%d.%d.%d",
                 &addr_bytes[0], &addr_bytes[1], &addr_bytes[2], &addr_bytes[3]) != 4) {
         printf("cannot parse addr\n");
@@ -77,7 +90,7 @@ static int addr_matches_prefix(char *addr, char *prefix) {
     int prefix_bytes[4];
     int prefix_len;
     char prefix_bitmap[32+1];
-    sprintf(prefix_bitmap, "");
+    sprintf(prefix_bitmap, "                                   ");
     if (sscanf(prefix, "%d.%d.%d.%d/%d",
                 &prefix_bytes[0], &prefix_bytes[1], &prefix_bytes[2], &prefix_bytes[3],
                 &prefix_len) != 5) {
@@ -99,47 +112,42 @@ static int addr_matches_prefix(char *addr, char *prefix) {
     }
     return 1;
 }
-    
+
 
 
 
 int main (int argc, char *argv[]) {  
-    //char *line = malloc (1000);
-    char *open_file = malloc (50);
-    FILE *rib_file = popen(open_file, "r");
+    char *line = malloc (1000);
     struct as *autnums = load_autnums();
-    printf("%d parameters\n", argc);
+    //struct as_info *info = malloc(sizeof(struct as_info));
 
-    while (autnums != NULL) {
-        printf("%d : %s \n ", autnums->num, autnums->name);
-        autnums = autnums->next;
-    }
-
-
+    char *open_file = malloc (50);
     strcpy(open_file, "./bgpdump -Mv ");
     strcat(open_file, argv[1]);
-    
-    //while ((line = fgets(line, LINE_SIZE, rib_file)) != NULL) {
-    //    printf("Line: %s", line);        
-    //}
-//        extract prefix and AS number
-//            if prefix != previous prefix {
-//                save prefix and AS number in hash table, indexed by first octet of prefix
-//            }
-//    }
-//    load AS number to AS name mapping file (autnums.html)
-//        foreach address {
-//            foreach prefix in appropriate row of hash table {
- //               if address matches prefix {
-//                    if (first match for this prefix) or (longer prefix than previous match) {
- //                       store corresponding AS number and AS name
-//                    }
-//                }
-//            }
-//            print address, and matching AS number and AS name
- //               or print error if not found
- //               or print error if found multiple times
- //       }
+    printf("%s \n", open_file);
+    FILE *rib_file = popen(open_file, "r");
+
+    while ((line = fgets(line, LINE_SIZE, rib_file)) != NULL) {
+        //info = extract_info(line);
+/*            if prefix != previous prefix {
+                save prefix and AS number in hash table, indexed by first octet of prefix
+            }
+    */
+        //printf("%s --- %d \n", info->prefix, info->as_num);
+    }/*
+    load AS number to AS name mapping file (autnums.html)
+        foreach address {
+            foreach prefix in appropriate row of hash table {
+                if address matches prefix {
+                    if (first match for this prefix) or (longer prefix than previous match) {
+                        store corresponding AS number and AS name
+                    }
+                }
+            }
+            print address, and matching AS number and AS name
+                or print error if not found
+                or print error if found multiple times
+        }*/
     pclose(rib_file);
     return 0;
 }
