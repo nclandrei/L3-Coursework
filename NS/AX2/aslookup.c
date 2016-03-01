@@ -11,6 +11,10 @@ struct as {
     struct as *next;
 };
 
+struct as_info {
+    int as_num;
+    char *prefix;
+};
 
 static struct as * load_autnums(void) {
     struct as *head = NULL;
@@ -39,19 +43,16 @@ static struct as * load_autnums(void) {
     return head;
 }
 
-/*static struct as_info *extract_info (char *line) {
+// function to extract the prefix and AS number from bgpdump output
+static struct as_info *extract_info (char *line) {
     struct as_info *info = malloc(sizeof(struct as_info));
-    char *pref = malloc(15);
+    char *pref = malloc(20);
     int as_num;
-    printf("am ajuns aici\n");
-    sscanf(line, "TABLE_DUMP2|%*s %*s|%*s|%*s|%*s|%s|%*d %*d %d|%*s", pref, &as_num);
-    info->prefix = pref;
+    sscanf(line, "TABLE_DUMP2|%*s|%*s|%*s|%*s|%s|%*s %d|%*s", pref, &as_num);
+    strcpy(info->prefix, pref);
     info->as_num = as_num;
-    printf("%s --- %d\n", pref, as_num);
-
     return info;
 }
-*/
 
 static void bytes_to_bitmap(int byte, char *bitmap) {
     int offset = 0;
@@ -118,20 +119,17 @@ static int addr_matches_prefix(char *addr, char *prefix) {
 
 int main (int argc, char *argv[]) {  
     char *line = malloc (1000);
-    printf("aaa");
     struct as *autnums = load_autnums();
-    //struct as_info *info = malloc(sizeof(struct as_info));
-
+    struct as_info *info = malloc(sizeof(struct as_info));
     char *open_file = malloc (50);
     strcpy(open_file, "./bgpdump -Mv ");
     strcat(open_file, argv[1]);
-    printf("%s \n", open_file);
     FILE *rib_file = popen(open_file, "r");
 
     while ((line = fgets(line, LINE_SIZE, rib_file)) != NULL) {
-        //info = extract_info(line);
-        printf("%s \n", line);
-/*            if prefix != previous prefix {
+        info = extract_info(line);
+        printf("%s --- %d\n", info->prefix, info->as_num);
+/*           if prefix != previous prefix {
                 save prefix and AS number in hash table, indexed by first octet of prefix
             }
     */
