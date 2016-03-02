@@ -11,6 +11,10 @@ struct as {
     struct as *next;
 };
 
+struct as_info {
+    int as_num;
+    char *prefix;
+};
 
 static struct as * load_autnums(void) {
     struct as *head = NULL;
@@ -39,7 +43,7 @@ static struct as * load_autnums(void) {
     return head;
 }
 
-/*static struct as_info *extract_info (char *line) {
+static struct as_info *extract_info (char *line) {
     struct as_info *info = malloc(sizeof(struct as_info));
     char *pref = malloc(15);
     int as_num;
@@ -51,7 +55,6 @@ static struct as * load_autnums(void) {
 
     return info;
 }
-*/
 
 static void bytes_to_bitmap(int byte, char *bitmap) {
     int offset = 0;
@@ -118,9 +121,8 @@ static int addr_matches_prefix(char *addr, char *prefix) {
 
 int main (int argc, char *argv[]) {  
     char *line = malloc (1000);
-    printf("aaa");
     struct as *autnums = load_autnums();
-    //struct as_info *info = malloc(sizeof(struct as_info));
+    struct as_info *info = malloc(sizeof(struct as_info));
 
     char *open_file = malloc (50);
     strcpy(open_file, "./bgpdump -Mv ");
