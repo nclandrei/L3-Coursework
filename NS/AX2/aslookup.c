@@ -46,11 +46,30 @@ static struct as * load_autnums(void) {
 // function to extract the prefix and AS number from bgpdump output
 static struct as_info *extract_info (char *line) {
     struct as_info *info = malloc(sizeof(struct as_info));
+    info->prefix = malloc (20);
     char *pref = malloc(20);
     int as_num;
-    sscanf(line, "TABLE_DUMP2|%*s|%*s|%*s|%*s|%s|%*s %d|%*s", pref, &as_num);
-    strcpy(info->prefix, pref);
-    info->as_num = as_num;
+    char *token;
+    const char delim[2] = "|";
+    const char delimSpace[2] = " ";
+    
+    token = strtok(line, delim);
+    int i = 0;
+    while (i < 5) {
+	token = strtok(NULL, delim);
+	++i;
+    }
+    strcpy(info->prefix, token);
+    token = strtok(NULL, delim);
+    int len = strlen(token);
+    char *last = token + len - 1;
+    char *num_char = malloc (20);
+    while (*last != ' ' && *last != '|') {
+        --last;
+    }
+    strcpy(num_char, last);
+    info->as_num = atoi(num_char);
+    printf("%s --- %d\n", info->prefix, info->as_num);
     return info;
 }
 
@@ -128,13 +147,12 @@ int main (int argc, char *argv[]) {
 
     while ((line = fgets(line, LINE_SIZE, rib_file)) != NULL) {
         info = extract_info(line);
-        printf("%s --- %d\n", info->prefix, info->as_num);
 /*           if prefix != previous prefix {
                 save prefix and AS number in hash table, indexed by first octet of prefix
             }
     */
     }
-    load AS number to AS name mapping file (autnums.html)
+    /*load AS number to AS name mapping file (autnums.html)
         foreach address {
             foreach prefix in appropriate row of hash table {
                 if address matches prefix {
