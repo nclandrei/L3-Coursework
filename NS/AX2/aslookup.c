@@ -14,7 +14,89 @@ struct as {
 struct as_info {
     int as_num;
     char *prefix;
+    struct as_info * next;
 };
+
+struct hash_table {
+    int size;
+    struct as_info **table;
+};
+
+static struct hash_table *init_hash_table (int size) {
+    struct hash_table *table;
+    if ((table=(malloc(sizeof(struct hash_table)))) == NULL) {
+	return NULL;
+    }
+    if ((table->table = malloc (sizeof(struct as_info) * 256)) == NULL) {
+        return NULL;
+    }
+    if (size != 256) {
+	return NULL;
+    }
+    for (int i = 0; i < size; ++i) {
+	table->table[i] = NULL;
+    }
+    table->size = size;
+    return table;
+}
+
+static unsigned int hash (struct hash_table *table, char *key) {
+    int bucket_number = atoi(key);
+    return bucket_number % table->size;
+}
+
+static struct as_info *create_pair (char *key, int value) {
+    struct as_info *new_pair;
+    if ((new_pair = malloc (sizeof (struct as_info))) == NULL) {
+	return NULL;
+    }
+    if ((new_pair->prefix = strdup(key)) == NULL) {
+	return NULL;
+    }
+    new_pair->as_num = value;
+    new_pair->next = NULL;
+    
+    return new_pair;
+} 
+
+static int get_pair (struct hash_table *table, char *key) {
+    struct as_info *pair;
+    unsigned int hash_value = hash(table, key);
+
+    for (pair = table->table[hash_value]; pair != NULL; pair = pair->next) {
+	if (strcmp(key, pair->prefix) == 0) {
+	    return pair->as_num;
+	}
+    }
+    return NULL;
+}
+
+static void add_pair (struct hash_table *table, char *key, int value) {
+    unsigned int hash_value = hash(table, key);
+    struct as_info *new_pair = NULL;
+    struct as_info *previous_pair = NULL;
+    struct as_info *next_pair = NULL;
+
+    next_pair = table->table[hash_value];
+    while (next_pair != NULL && strcmp (key, next_pair->prefix) == 0 && next_pair->prefix != NULL) {
+	previous_pair = next_pair;
+	next_pair = next_pair->next;
+    }
+
+    new_pair = create_pair (key, value);
+    if (next_pair == table->table[hash_value]) {
+	new_pair->next = next_pair;
+	table->table[hash_value] = new_pair;
+    }
+    else if (next_pair == NULL) {
+	previous_pair->next = new_pair;
+    }
+    else {
+	new_pair->next = next_pair;
+	previous_pair->next = new_pair;
+    }     
+}        
+
 
 static struct as * load_autnums(void) {
     struct as *head = NULL;
@@ -69,7 +151,6 @@ static struct as_info *extract_info (char *line) {
     }
     strcpy(num_char, last);
     info->as_num = atoi(num_char);
-    printf("%s --- %d\n", info->prefix, info->as_num);
     return info;
 }
 
@@ -138,22 +219,23 @@ static int addr_matches_prefix(char *addr, char *prefix) {
 
 int main (int argc, char *argv[]) {  
     char *line = malloc (1000);
-    struct as *autnums = load_autnums();
+
     struct as_info *info = malloc(sizeof(struct as_info));
+
     char *open_file = malloc (50);
     strcpy(open_file, "./bgpdump -Mv ");
     strcat(open_file, argv[1]);
     FILE *rib_file = popen(open_file, "r");
 
+    struct hash_table *hashtable = init_hash_table(256);
+
     while ((line = fgets(line, LINE_SIZE, rib_file)) != NULL) {
         info = extract_info(line);
-/*           if prefix != previous prefix {
-                save prefix and AS number in hash table, indexed by first octet of prefix
-            }
-    */
+        add_pair(hashtable, info->prefix, info->as_num);
+        printf("PREFIX: %s \n AS VALUE: %d\n\n", info->prefix, get_pair(hashtable, info->prefix));
     }
-    /*load AS number to AS name mapping file (autnums.html)
-        foreach address {
+    struct as *autnums = load_autnums();
+    /*    foreach address {
             foreach prefix in appropriate row of hash table {
                 if address matches prefix {
                     if (first match for this prefix) or (longer prefix than previous match) {
