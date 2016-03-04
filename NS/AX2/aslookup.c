@@ -24,10 +24,10 @@ struct hash_table {
 
 static struct hash_table *init_hash_table (int size) {
     struct hash_table *table;
-    if ((table=(malloc(sizeof(struct hash_table)))) == NULL) {
+    if ((table = malloc(sizeof(struct hash_table))) == NULL) {
 	return NULL;
     }
-    if ((table->table = malloc (sizeof(struct as_info) * 256)) == NULL) {
+    if ((table->table = malloc (sizeof(struct as_info *) * size)) == NULL) {
         return NULL;
     }
     if (size != 256) {
@@ -62,13 +62,16 @@ static struct as_info *create_pair (char *key, int value) {
 static int get_pair (struct hash_table *table, char *key) {
     struct as_info *pair;
     unsigned int hash_value = hash(table, key);
-
-    for (pair = table->table[hash_value]; pair != NULL; pair = pair->next) {
-	if (strcmp(key, pair->prefix) == 0) {
-	    return pair->as_num;
-	}
+    pair = table->table[hash_value];
+    while (pair != NULL && strcmp(pair->prefix, key) > 0 && pair->prefix != NULL) {
+	pair = pair->next;
     }
-    return NULL;
+    if (pair == NULL || pair->prefix == NULL || strcmp(pair->prefix, key) != 0) {
+	return NULL;
+    }
+    else {
+	return pair->as_num;
+    } 
 }
 
 static void add_pair (struct hash_table *table, char *key, int value) {
@@ -82,7 +85,9 @@ static void add_pair (struct hash_table *table, char *key, int value) {
 	previous_pair = next_pair;
 	next_pair = next_pair->next;
     }
-
+    if(next_pair != NULL && next_pair->prefix != NULL && strcmp(key, next_pair->prefix) == 0 && next_pair->as_num == value) {
+	return;
+    } 
     new_pair = create_pair (key, value);
     if (next_pair == table->table[hash_value]) {
 	new_pair->next = next_pair;
@@ -94,7 +99,7 @@ static void add_pair (struct hash_table *table, char *key, int value) {
     else {
 	new_pair->next = next_pair;
 	previous_pair->next = new_pair;
-    }     
+    }
 }        
 
 
@@ -128,8 +133,8 @@ static struct as * load_autnums(void) {
 // function to extract the prefix and AS number from bgpdump output
 static struct as_info *extract_info (char *line) {
     struct as_info *info = malloc(sizeof(struct as_info));
-    info->prefix = malloc (20);
-    char *pref = malloc(20);
+    info->prefix = malloc (30);
+    char *pref = malloc(30);
     int as_num;
     char *token;
     const char delim[2] = "|";
@@ -145,7 +150,7 @@ static struct as_info *extract_info (char *line) {
     token = strtok(NULL, delim);
     int len = strlen(token);
     char *last = token + len - 1;
-    char *num_char = malloc (20);
+    char *num_char = malloc (30);
     while (*last != ' ' && *last != '|') {
         --last;
     }
@@ -228,25 +233,68 @@ int main (int argc, char *argv[]) {
     FILE *rib_file = popen(open_file, "r");
 
     struct hash_table *hashtable = init_hash_table(256);
+    char *current = malloc(30);
+    strcpy(current, (extract_info(line = fgets(line, LINE_SIZE, rib_file)))->prefix);
+    char *previous = malloc(30);
+    strcpy(previous, current);
 
     while ((line = fgets(line, LINE_SIZE, rib_file)) != NULL) {
         info = extract_info(line);
+        strcpy(current, info->prefix);
+	if (strcmp(current, previous) == 0) {
+    	    strcpy(previous, current);
+	    continue;
+	}
         add_pair(hashtable, info->prefix, info->as_num);
-        printf("PREFIX: %s \n AS VALUE: %d\n\n", info->prefix, get_pair(hashtable, info->prefix));
+	strcpy(previous, current);
     }
+    
+    free(info);
+    free(current);
+    free(previous);
+    free(open_file);
+
     struct as *autnums = load_autnums();
-    /*    foreach address {
-            foreach prefix in appropriate row of hash table {
-                if address matches prefix {
-                    if (first match for this prefix) or (longer prefix than previous match) {
-                        store corresponding AS number and AS name
-                    }
-                }
-            }
-            print address, and matching AS number and AS name
-                or print error if not found
-                or print error if found multiple times
-        }*/
+    struct as_info *result = malloc(sizeof(struct as_info *));
+
+    for (int i = 2; i < argc; ++i) {
+        int row = atoi(argv[i]);
+	int count = 0;
+	char *previous_prefix = malloc(30);
+        for(struct as_info* cursor = hashtable->table[row]; cursor != NULL; cursor = cursor->next) {
+	    if (addr_matches_prefix(argv[i], cursor->prefix) == 1) {
+		++count;
+	        if ((count == 1) || (strcmp(cursor->prefix, previous_prefix) > 0)) {
+	            strcpy(previous_prefix, cursor->prefix);
+		    struct as *as_cursor = autnums;
+		    while (as_cursor != NULL && as_cursor->num != cursor->as_num) {
+			as_cursor = as_cursor->next;
+	            }
+		    if (as_cursor != NULL) {
+		    	result->prefix = malloc(30);
+			result->as_num = as_cursor->num;
+			strcpy(result->prefix, as_cursor->name);
+		    }
+	        }
+	    }
+	}
+	if (count == 1) {
+	    printf("%s    %d    %s\n", argv[i], result->as_num, result->prefix);
+	}
+	else if (count == 0) {
+	    printf("%s        - unknown\n", argv[i]);
+	}
+	else {
+	    printf("%s        - multiple\n", argv[i]);
+	}
+    }
+
+    free(autnums);
+    for (int i=0; i < 256; ++i) {
+	free(hashtable->table[i]);
+    }
+    free(hashtable);
     pclose(rib_file);
+
     return 0;
 }
