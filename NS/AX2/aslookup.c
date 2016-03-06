@@ -244,8 +244,14 @@ int main (int argc, char *argv[]) {
 	char *previous_prefix = NULL;
         for(struct as_info* cursor = hashtable->table[row]; cursor != NULL; cursor = cursor->next) {
 	    if (addr_matches_prefix(address, cursor->prefix)) {
-		++count;
-	        if (count == 1 || get_prefix_length(cursor->prefix) > get_prefix_length(previous_prefix)) {
+		if (previous_prefix == NULL) {
+		    ++count;
+		}
+		else if (get_prefix_length(cursor->prefix) == get_prefix_length (previous_prefix)) {
+		    ++count;
+		    break;
+		}     		
+	        if (previous_prefix == NULL || get_prefix_length(cursor->prefix) > get_prefix_length(previous_prefix)) {
 	            previous_prefix = strdup(cursor->prefix);
 		    struct as *as_cursor = autnums;
 		    while (as_cursor != NULL && as_cursor->num != cursor->as_num) {
@@ -259,18 +265,19 @@ int main (int argc, char *argv[]) {
 			result->as_num = as_cursor->num;
 			result->prefix = strdup(as_cursor->name);
 		    }
+		    free(as_cursor);
 	        }
 	    }
 	}
-//	if (count == 1) {
+	if (count == 1) {
 	    printf("%s    %d    %s\n", argv[i], result->as_num, result->prefix);
-//	}
-//	else if (count == 0) {
-//	    printf("%s        - unknown\n", argv[i]);
-//	}
-//	else {
-//	    printf("%s        - multiple\n", argv[i]);
-//	}
+	}
+	else if (count == 0) {
+	    printf("%s        - unknown\n", argv[i]);
+	}
+	else {
+	    printf("%s        - multiple\n", argv[i]);
+	}
     }
 
     free(line);
