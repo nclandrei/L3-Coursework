@@ -12,7 +12,6 @@
 int main(int argc, char *argv[]) {
     struct addrinfo hints, *ai, *ai0;    
     char ip_address[BUFLEN];
-    struct sockaddr_in *h;
     int i;
 
     if (argc < 2) {
