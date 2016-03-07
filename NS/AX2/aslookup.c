@@ -33,16 +33,16 @@ static int get_prefix_length (char *prefix) {
 static struct hash_table *init_hash_table (int size) {
     struct hash_table *table;
     if ((table = malloc(sizeof(struct hash_table))) == NULL) {
-	return NULL;
+        return NULL;
     }
     if ((table->table = malloc (sizeof(struct as_info *) * size)) == NULL) {
         return NULL;
     }
     if (size != 256) {
-	return NULL;
+        return NULL;
     }
     for (int i = 0; i < size; ++i) {
-	table->table[i] = NULL;
+        table->table[i] = NULL;
     }
     table->size = size;
     return table;
@@ -56,14 +56,14 @@ static unsigned int hash (struct hash_table *table, char *key) {
 static struct as_info *create_pair (char *key, int value) {
     struct as_info *new_pair;
     if ((new_pair = malloc (sizeof (struct as_info))) == NULL) {
-	return NULL;
+        return NULL;
     }
     if ((new_pair->prefix = strdup(key)) == NULL) {
-	return NULL;
+        return NULL;
     }
     new_pair->as_num = value;
     new_pair->next = NULL;
-    
+
     return new_pair;
 } 
 
@@ -75,23 +75,23 @@ static void add_pair (struct hash_table *table, char *key, int value) {
 
     next_pair = table->table[hash_value];
     while (next_pair != NULL && strcmp (key, next_pair->prefix) == 0 && next_pair->prefix != NULL) {
-	previous_pair = next_pair;
-	next_pair = next_pair->next;
+        previous_pair = next_pair;
+        next_pair = next_pair->next;
     }
     if(next_pair != NULL && next_pair->prefix != NULL && strcmp(key, next_pair->prefix) == 0 && next_pair->as_num == value) {
-	return;
+        return;
     } 
     new_pair = create_pair (key, value);
     if (next_pair == table->table[hash_value]) {
-	new_pair->next = next_pair;
-	table->table[hash_value] = new_pair;
+        new_pair->next = next_pair;
+        table->table[hash_value] = new_pair;
     }
     else if (next_pair == NULL) {
-	previous_pair->next = new_pair;
+        previous_pair->next = new_pair;
     }
     else {
-	new_pair->next = next_pair;
-	previous_pair->next = new_pair;
+        new_pair->next = next_pair;
+        previous_pair->next = new_pair;
     }
 }        
 
@@ -128,12 +128,12 @@ static struct as_info *extract_info (char *line) {
     struct as_info *info = malloc(sizeof(struct as_info));
     info->prefix = NULL;
     char *token = NULL;
-    
+
     token = strtok(line, "|");
     int i = 0;
     while (i < 5) {
-	token = strtok(NULL, "|");
-	++i;
+        token = strtok(NULL, "|");
+        ++i;
     }
     info->prefix = strdup(token);
     token = strtok(NULL, "|");
@@ -226,58 +226,58 @@ int main (int argc, char *argv[]) {
     while ((line = fgets(line, LINE_SIZE, rib_file)) != NULL) {
         info = extract_info(line);
         strcpy(current, info->prefix);
-	if (strcmp(current, previous) == 0) {
-    	    strcpy(previous, current);
-	    continue;
-	}
+        if (strcmp(current, previous) == 0) {
+            strcpy(previous, current);
+            continue;
+        }
         add_pair(hashtable, info->prefix, info->as_num);
-	strcpy(previous, current);
+        strcpy(previous, current);
     }
-    
+
     struct as *autnums = load_autnums();
     struct as_info *result = malloc(sizeof(struct as_info *));
 
     for (int i = 2; i < argc; ++i) {
         int row = atoi(argv[i]);
-	char *address = strdup(argv[i]);
-	int count = 0;
-	char *previous_prefix = NULL;
+        char *address = strdup(argv[i]);
+        int count = 0;
+        char *previous_prefix = NULL;
         for(struct as_info* cursor = hashtable->table[row]; cursor != NULL; cursor = cursor->next) {
-	    if (addr_matches_prefix(address, cursor->prefix)) {
-		if (previous_prefix == NULL) {
-		    ++count;
-		}
-		else if (get_prefix_length(cursor->prefix) == get_prefix_length (previous_prefix)) {
-		    ++count;
-		    break;
-		}     		
-	        if (previous_prefix == NULL || get_prefix_length(cursor->prefix) > get_prefix_length(previous_prefix)) {
-	            previous_prefix = strdup(cursor->prefix);
-		    struct as *as_cursor = autnums;
-		    while (as_cursor != NULL && as_cursor->num != cursor->as_num) {
-			if (as_cursor->num == cursor->as_num) {
-			    break;
-			} 
-    			as_cursor = as_cursor->next;
-	            }
-		    if (as_cursor != NULL) {
-		    	result->prefix = NULL;
-			result->as_num = as_cursor->num;
-			result->prefix = strdup(as_cursor->name);
-		    }
-		    free(as_cursor);
-	        }
-	    }
-	}
-	if (count == 1) {
-	    printf("%s    %d    %s\n", argv[i], result->as_num, result->prefix);
-	}
-	else if (count == 0) {
-	    printf("%s        - unknown\n", argv[i]);
-	}
-	else {
-	    printf("%s        - multiple\n", argv[i]);
-	}
+            if (addr_matches_prefix(address, cursor->prefix)) {
+                if (previous_prefix == NULL) {
+                    ++count;
+                }
+                else if (get_prefix_length(cursor->prefix) == get_prefix_length (previous_prefix)) {
+                    ++count;
+                    break;
+                }     		
+                if (previous_prefix == NULL || get_prefix_length(cursor->prefix) > get_prefix_length(previous_prefix)) {
+                    previous_prefix = strdup(cursor->prefix);
+                    struct as *as_cursor = autnums;
+                    while (as_cursor != NULL && as_cursor->num != cursor->as_num) {
+                        if (as_cursor->num == cursor->as_num) {
+                            break;
+                        } 
+                        as_cursor = as_cursor->next;
+                    }
+                    if (as_cursor != NULL) {
+                        result->prefix = NULL;
+                        result->as_num = as_cursor->num;
+                        result->prefix = strdup(as_cursor->name);
+                    }
+                    free(as_cursor);
+                }
+            }
+        }
+        if (count == 1) {
+            printf("%-15s %-6d %-200s\n", argv[i], result->as_num, result->prefix);
+        }
+        else if (count == 0) {
+            printf("%-15s %-6s %-200s\n", argv[i], "-", "unknown");
+        }
+        else {
+            printf("%-15s %-6s %-200s \n", argv[i], "-", "multiple");
+        }
     }
 
     free(line);
@@ -287,7 +287,7 @@ int main (int argc, char *argv[]) {
     free(path);
     free(autnums);
     for (int i=0; i < 256; ++i) {
-	free(hashtable->table[i]);
+        free(hashtable->table[i]);
     }
     free(hashtable);
     pclose(rib_file);
