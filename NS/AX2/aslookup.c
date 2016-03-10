@@ -22,7 +22,7 @@ struct hash_table {
     struct as_info **table;
 };
 
-static int get_prefix_length (char *prefix) {
+static int get_pref_len (char *prefix) {
     char *index;
     index = strchr(prefix, '/');
     ++index;
@@ -241,48 +241,49 @@ int main (int argc, char *argv[]) {
 
     fflush(stdout);
     struct as *autnums = load_autnums();
-    struct as_info *result = malloc(sizeof(struct as_info *));
 
     for (int i = 2; i < argc; ++i) {
         int row = atoi(argv[i]);
         char *address = strdup(argv[i]);
         int count = 0;
-        char *previous_prefix = NULL;
-        for(struct as_info* cursor = hashtable->table[row]; cursor != NULL; cursor = cursor->next) {
+        struct as_info *match = NULL;
+	struct as_info *cursor = hashtable->table[row];
+	while (cursor != NULL) {
             if (addr_matches_prefix(address, cursor->prefix)) {
-                if (previous_prefix == NULL) {
-                    ++count;
-                }
-                else if (get_prefix_length(cursor->prefix) == get_prefix_length (previous_prefix)) {
-                    ++count;
+                if (match != NULL && get_pref_len(cursor->prefix) == get_pref_len (match->prefix)) {
+		    count = 2;
                     break;
                 }     		
-                if (previous_prefix == NULL || get_prefix_length(cursor->prefix) > get_prefix_length(previous_prefix)) {
-                    previous_prefix = strdup(cursor->prefix);
-                    struct as *as_cursor = autnums;
-                    while (as_cursor != NULL && as_cursor->num != cursor->as_num) {
-                        if (as_cursor->num == cursor->as_num) {
-                            break;
-                        } 
-                        as_cursor = as_cursor->next;
-                    }
-                    if (as_cursor != NULL) {
-                        result->prefix = NULL;
-                        result->as_num = as_cursor->num;
-                        result->prefix = strdup(as_cursor->name);
-                    }
-                    free(as_cursor);
-                }
+                if (match == NULL || get_pref_len(cursor->prefix) > get_pref_len(match->prefix)) {
+		    count = 1;
+		    match = cursor;
+		}
+	    }
+	    cursor = cursor->next;
+	}
+	if (count == 0) {
+	    printf("%-15s %-6s %-200s\n", argv[i], "-", "unknown");
+	}
+        else if (count == 2) {
+	    printf("%-15s %-6s %-200s \n", argv[i], "-", "multiple");
+	}
+	else {
+	    int as_number = match->as_num;
+	    char *as_name = NULL;
+            struct as *as_cursor = autnums;
+            while (as_cursor != NULL) {
+                if (as_cursor->num == as_number) {
+		    as_name = as_cursor->name;
+                    break;
+                } 
+                as_cursor = as_cursor->next;
             }
-        }
-        if (count == 1) {
-            printf("%-15s %-6d %-200s\n", argv[i], result->as_num, result->prefix);
-        }
-        else if (count == 0) {
-            printf("%-15s %-6s %-200s\n", argv[i], "-", "unknown");
-        }
-        else {
-            printf("%-15s %-6s %-200s \n", argv[i], "-", "multiple");
+            if (as_cursor != NULL) {
+                printf("%-15s %-6d %-200s\n", argv[i], as_number, as_name);
+            }
+	    else {
+		printf("%-15s %-6s %-200s\n", argv[i], "-", "unknown");
+            }
         }
     }
 
