@@ -22,7 +22,7 @@ struct hash_table {
     struct as_info **table;
 };
 
-static int get_prefix_length (char *prefix) {
+static int get_pref_len (char *prefix) {
     char *index = NULL;
     index = strchr(prefix, '/');
     ++index;
@@ -235,7 +235,6 @@ int main (int argc, char *argv[]) {
     pclose(rib_file);    
 
     struct as *autnums = load_autnums();
-    struct as_info *result = malloc(sizeof(struct as_info *));
 
     FILE *txt_file = fopen("router-topology.txt", "r");
     FILE *topology = fopen("as-topology.txt", "w+");
@@ -266,84 +265,89 @@ int main (int argc, char *argv[]) {
 	    ++i;
 	}
 	int row = atoi(address_one);
-        int count = 0;
-        char *previous_prefix = NULL;
-        for(struct as_info* cursor = hashtable->table[row]; cursor != NULL; cursor = cursor->next) {
+	int count = 0;
+        struct as_info *match = NULL;
+	struct as_info *cursor = hashtable->table[row];
+	while (cursor != NULL) {
             if (addr_matches_prefix(address_one, cursor->prefix)) {
-                if (previous_prefix == NULL) {
-                    ++count;
-                }
-                else if (get_prefix_length(cursor->prefix) == get_prefix_length (previous_prefix)) {
-                    ++count;
+                if (match != NULL && get_pref_len(cursor->prefix) == get_pref_len (match->prefix)) {
+		    count = 2;
                     break;
                 }     		
-                if (previous_prefix == NULL || get_prefix_length(cursor->prefix) > get_prefix_length(previous_prefix)) {
-                    previous_prefix = strdup(cursor->prefix);
-                    struct as *as_cursor = autnums;
-                    while (as_cursor != NULL && as_cursor->num != cursor->as_num) {
-                        if (as_cursor->num == cursor->as_num) {
-                            break;
-                        } 
-                        as_cursor = as_cursor->next;
-                    }
-                    if (as_cursor != NULL) {
-                        result->prefix = NULL;
-                        result->as_num = as_cursor->num;
-                        result->prefix = strdup(as_cursor->name);
-                    }
-                    free(as_cursor);
-                }
-            }
-        }
-        if (count == 1) {
-            fprintf(topology, "\"%d %s\" -- ", result->as_num, result->prefix);
-        }
-        else if (count == 0) {
+                if (match == NULL || get_pref_len(cursor->prefix) > get_pref_len(match->prefix)) {
+		    count = 1;
+		    match = cursor;
+		}
+	    }
+	    cursor = cursor->next;
+	}
+	if (count == 0) {
             fprintf(topology, "\"- unknown\" -- ");
-        }
-        else {
+	}
+        else if (count == 2) {
             fprintf(topology, "\"- multiple\" -- ");
+	}
+	else {
+	    int as_number = match->as_num;
+	    char *as_name = NULL;
+            struct as *as_cursor = autnums;
+            while (as_cursor != NULL) {
+                if (as_cursor->num == as_number) {
+		    as_name = as_cursor->name;
+                    break;
+                } 
+                as_cursor = as_cursor->next;
+            }
+            if (as_cursor != NULL) {
+                fprintf(topology, "\"%d %s\" -- ", as_number, as_name);
+            }
+	    else {
+                fprintf(topology, "\"- unknown\" -- ");
+            }
         }
 	row = atoi(address_two);
-        count = 0;
-        previous_prefix = NULL;
-	
-        for(struct as_info* cursor_one = hashtable->table[row]; cursor_one != NULL; cursor_one = cursor_one->next) {
-            if (addr_matches_prefix(address_two, cursor_one->prefix)) {
-                if (previous_prefix == NULL) {
-                    ++count;
-                }
-                else if (get_prefix_length(cursor_one->prefix) == get_prefix_length (previous_prefix)) {
-                    ++count;
+	count = 0;
+        match = NULL;
+	cursor = hashtable->table[row];
+	while (cursor != NULL) {
+            if (addr_matches_prefix(address_two, cursor->prefix)) {
+                if (match != NULL && get_pref_len(cursor->prefix) == get_pref_len (match->prefix)) {
+		    count = 2;
                     break;
                 }     		
-                if (previous_prefix == NULL || get_prefix_length(cursor_one->prefix) > get_prefix_length(previous_prefix)) {
-                    previous_prefix = strdup(cursor_one->prefix);
-                    struct as *as_cursor = autnums;
-                    while (as_cursor != NULL && as_cursor->num != cursor_one->as_num) {
-                        if (as_cursor->num == cursor_one->as_num) {
-                            break;
-                        } 
-                        as_cursor = as_cursor->next;
-                    }
-                    if (as_cursor != NULL) {
-                        result->prefix = NULL;
-                        result->as_num = as_cursor->num;
-                        result->prefix = strdup(as_cursor->name);
-                    }
-                    free(as_cursor);
-                }
+                if (match == NULL || get_pref_len(cursor->prefix) > get_pref_len(match->prefix)) {
+		    count = 1;
+		    match = cursor;
+		}
+	    }
+	    cursor = cursor->next;
+	}
+	if (count == 0) {
+            fprintf(topology, "\"- unknown\"\n");
+	}
+        else if (count == 2) {
+            fprintf(topology, "\"- multiple\"\n");
+	}
+	else {
+	    int as_number = match->as_num;
+	    char *as_name = NULL;
+            struct as *as_cursor = autnums;
+            while (as_cursor != NULL) {
+                if (as_cursor->num == as_number) {
+		    as_name = as_cursor->name;
+                    break;
+                } 
+                as_cursor = as_cursor->next;
+            }
+            if (as_cursor != NULL) {
+                fprintf(topology, "\"%d %s\"\n", as_number, as_name);
+            }
+	    else {
+                fprintf(topology, "\"- unknown\"\n");
             }
         }
-        if (count == 1) {
-            fprintf(topology, "\"%d %s\"\n", result->as_num, result->prefix);
-        }
-        else if (count == 0) {
-            fprintf(topology, "\"- unknown\"\n");
-        }
-        else {
-            fprintf(topology, "\"- multiple\"\n");
-        }
+
+            
     }
 
     fflush(topology);
@@ -355,7 +359,6 @@ int main (int argc, char *argv[]) {
     free(current);
     free(previous);
     free(path);
-    free(result);
     free(autnums);
     for (int i=0; i < 256; ++i) {
         free(hashtable->table[i]);
