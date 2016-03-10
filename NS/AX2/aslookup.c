@@ -220,60 +220,65 @@ int main (int argc, char *argv[]) {
 
     struct hash_table *hashtable = init_hash_table(256);
     char *current = NULL;
-    current = strdup(extract_info(line = fgets(line, LINE_SIZE, rib_file))->prefix);
-    char *previous = strdup(current);
+    char *previous = strdup("previous_prefix");
     int i = 0;
 
     while ((line = fgets(line, LINE_SIZE, rib_file)) != NULL) {
         info = extract_info(line);
-        strcpy(current, info->prefix);
-        if (strcmp(current, previous) == 0) {
+        current = strdup(info->prefix);
+        if (strcmp(previous, current) != 0) {
+            free(previous);
+            previous = strdup(current);
+            add_pair(hashtable, info->prefix, info->as_num);
             strcpy(previous, current);
-	    continue;
+            if (i%100000 == 0) {
+                printf(".\n");
+            }
+            ++i;
         }
-        add_pair(hashtable, info->prefix, info->as_num);
-        strcpy(previous, current);
-	if (i%100000 == 0) {
-	    printf(".\n");
-	}
-	++i;
+        free(current);
     }
 
     fflush(stdout);
+
     struct as *autnums = load_autnums();
+    if (autnums == NULL ) {
+        printf("Could not load autnums.html.\n");
+        return -1;
+    }
 
     for (int i = 2; i < argc; ++i) {
         int row = atoi(argv[i]);
         char *address = strdup(argv[i]);
         int count = 0;
         struct as_info *match = NULL;
-	struct as_info *cursor = hashtable->table[row];
-	while (cursor != NULL) {
+        struct as_info *cursor = hashtable->table[row];
+        while (cursor != NULL) {
             if (addr_matches_prefix(address, cursor->prefix)) {
                 if (match != NULL && get_pref_len(cursor->prefix) == get_pref_len (match->prefix)) {
-		    count = 2;
+                    count = 2;
                     break;
                 }     		
                 if (match == NULL || get_pref_len(cursor->prefix) > get_pref_len(match->prefix)) {
-		    count = 1;
-		    match = cursor;
-		}
-	    }
-	    cursor = cursor->next;
-	}
-	if (count == 0) {
-	    printf("%-15s %-6s %-200s\n", argv[i], "-", "unknown");
-	}
+                    count = 1;
+                    match = cursor;
+                }
+            }
+            cursor = cursor->next;
+        }
+        if (count == 0) {
+            printf("%-15s %-6s %-200s\n", argv[i], "-", "unknown");
+        }
         else if (count == 2) {
-	    printf("%-15s %-6s %-200s \n", argv[i], "-", "multiple");
-	}
-	else {
-	    int as_number = match->as_num;
-	    char *as_name = NULL;
+            printf("%-15s %-6s %-200s \n", argv[i], "-", "multiple");
+        }
+        else {
+            int as_number = match->as_num;
+            char *as_name = NULL;
             struct as *as_cursor = autnums;
             while (as_cursor != NULL) {
                 if (as_cursor->num == as_number) {
-		    as_name = as_cursor->name;
+                    as_name = as_cursor->name;
                     break;
                 } 
                 as_cursor = as_cursor->next;
@@ -281,8 +286,8 @@ int main (int argc, char *argv[]) {
             if (as_cursor != NULL) {
                 printf("%-15s %-6d %-200s\n", argv[i], as_number, as_name);
             }
-	    else {
-		printf("%-15s %-6s %-200s\n", argv[i], "-", "unknown");
+            else {
+                printf("%-15s %-6s %-200s\n", argv[i], "-", "unknown");
             }
         }
     }
@@ -292,9 +297,21 @@ int main (int argc, char *argv[]) {
     free(current);
     free(previous);
     free(path);
-    free(autnums);
+    struct as *cursor = autnums;
+    while (cursor != NULL) {
+        struct as *delete_node = cursor;
+        cursor = cursor->next;
+        free(delete_node->name);
+        free(delete_node);
+    }
     for (int i=0; i < 256; ++i) {
-        free(hashtable->table[i]);
+        struct as_info *cursor = hashtable->table[i];
+        while(cursor != NULL) {
+            struct as_info *delete_node = cursor;
+            cursor = cursor->next;
+            free(delete_node->prefix);
+            free(delete_node);
+        }
     }
     free(hashtable);
     pclose(rib_file);
