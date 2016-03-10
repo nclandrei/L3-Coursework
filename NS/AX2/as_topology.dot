@@ -1,0 +1,11 @@
+graph astopology {
+"559 SWITCH SWITCH,CH" -- "6453 TATA COMMUNICATIONS (AMERICA) INC,US"
+"6453 - TATA COMMUNICATIONS (AMERICA) INC,US" -- "20965 GEANT GEANT Limited,GB"
+"20965 GEANT GEANT Limited,GB" -- "3356 LEVEL3 - Level 3 Communications, Inc.,US"
+"3356 LEVEL3 - Level 3 Communications, Inc.,US" -- "15169 GOOGLE - Google Inc.,US"
+"15169 GOOGLE - Google Inc.,US" -- "- unknown"
+"15169 GOOGLE - Google Inc.,US" -- "47872 SOFIA-CONNECT-AS SOFIA CONNECT EOOD,BG"
+"47872 SOFIA-CONNECT-AS SOFIA CONNECT EOOD,BG" -- "- unknown"
+"6910 DIALTELECOMRO Digital Cable Systems S.A.,RO" -- "37282 MAINONE,NG"
+"- unknown" -- "32934 FACEBOOK - Facebook, Inc.,US"
+}
