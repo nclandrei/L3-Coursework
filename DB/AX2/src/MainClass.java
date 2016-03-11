@@ -5,9 +5,9 @@ public class MainClass {
     public static void method3A(Statement statement) {
         String query = "SELECT AVG(RATING) AS AVERAGE FROM RELEASE WHERE RATING >= 8";
         try {
-            ResultSet resultSet = statement.executeQuery(query);
-            while (resultSet.next()) {
-                System.out.println("Average rating: " + resultSet.getString("AVERAGE") + "\n");
+            ResultSet results = statement.executeQuery(query);
+            while (results.next()) {
+                System.out.println(results.getString("AVERAGE") + "\n");
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -15,7 +15,20 @@ public class MainClass {
     }
 
     public static void method3B(Statement statement) {
-
+        String query = "SELECT name " +
+                "FROM member " +
+                "JOIN memberof ON member.mid = memberof.mid " +
+                "WHERE stillalive = 'Y' AND endyear IS NULL " +
+                "GROUP BY name " +
+                "HAVING count(DISTINCT instrument) > 1 AND count(DISTINCT memberof.bid) > 1";
+        try {
+            ResultSet results = statement.executeQuery(query);
+            while (results.next()) {
+                System.out.println(results.getString("name") + "\n");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
     public static void method3C(Statement statement) {
