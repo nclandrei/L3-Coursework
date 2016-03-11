@@ -1,10 +1,3 @@
-/** 
-  * Class for returning autonomous system number and name for all
-  * IP addresses passed as command line arguments
-  * GUID: 2147392n
-  * NS(H) Assessed Exercise 2
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -18,36 +11,31 @@ struct as {
     struct as *next;
 };
 
-// struct for defining the hashtable node
-struct node {
+struct as_info {
     int as_num;
     char *prefix;
-    struct node * next;
+    struct as_info * next;
 };
 
-// struct for the bucket hashtable used for storing prefixes with 
-// corresponding AS numbers
 struct hash_table {
     int size;
-    struct node **table;
+    struct as_info **table;
 };
 
-// return prefix's length
 static int get_pref_len (char *prefix) {
-    char *index;
+    char *index = NULL;
     index = strchr(prefix, '/');
     ++index;
     int len = atoi(index);
     return len;
 }
 
-// initialize bucket-based hashtable
 static struct hash_table *init_hash_table (int size) {
     struct hash_table *table;
     if ((table = malloc(sizeof(struct hash_table))) == NULL) {
         return NULL;
     }
-    if ((table->table = malloc (sizeof(struct node *) * size)) == NULL) {
+    if ((table->table = malloc (sizeof(struct as_info *) * size)) == NULL) {
         return NULL;
     }
     if (size != 256) {
@@ -60,16 +48,14 @@ static struct hash_table *init_hash_table (int size) {
     return table;
 }
 
-// hash function returning the correct bucket number for a prefix
 static unsigned int hash (struct hash_table *table, char *key) {
     int bucket_number = atoi(key);
     return bucket_number % table->size;
 }
 
-// creates a string-integer node for the hashtable
-static struct node *create_pair (char *key, int value) {
-    struct node *new_pair;
-    if ((new_pair = malloc (sizeof (struct node))) == NULL) {
+static struct as_info *create_pair (char *key, int value) {
+    struct as_info *new_pair;
+    if ((new_pair = malloc (sizeof (struct as_info))) == NULL) {
         return NULL;
     }
     if ((new_pair->prefix = strdup(key)) == NULL) {
@@ -81,12 +67,11 @@ static struct node *create_pair (char *key, int value) {
     return new_pair;
 } 
 
-// hashtable put function
 static void add_pair (struct hash_table *table, char *key, int value) {
     unsigned int hash_value = hash(table, key);
-    struct node *new_pair = NULL;
-    struct node *previous_pair = NULL;
-    struct node *next_pair = NULL;
+    struct as_info *new_pair = NULL;
+    struct as_info *previous_pair = NULL;
+    struct as_info *next_pair = NULL;
 
     next_pair = table->table[hash_value];
     while (next_pair != NULL && strcmp (key, next_pair->prefix) == 0 && next_pair->prefix != NULL) {
@@ -139,8 +124,8 @@ static struct as * load_autnums(void) {
 }
 
 // function to extract the prefix and AS number from bgpdump output
-static struct node *extract_info (char *line) {
-    struct node *info = malloc(sizeof(struct node));
+static struct as_info *extract_info (char *line) {
+    struct as_info *info = malloc(sizeof(struct as_info));
     info->prefix = NULL;
     char *token = NULL;
 
@@ -153,7 +138,7 @@ static struct node *extract_info (char *line) {
     info->prefix = strdup(token);
     token = strtok(NULL, "|");
     int len = strlen(token);
-    char *last = token + len - 1;	
+    char *last = token + len - 1;
     char *num_char = NULL; 
     while (*last != ' ' && *last != '|') {
         --last;
@@ -225,136 +210,160 @@ static int addr_matches_prefix(char *addr, char *prefix) {
 
 int main (int argc, char *argv[]) {  
     char *line = malloc (1000);
+    struct as_info *info = malloc(sizeof(struct as_info));
 
-    struct node *info = malloc(sizeof(struct node));
-
-    if (argc == 1) {
-	printf("Please specify a rib file.\n");
-	return -1;
-    }
-
-    // create the path for running bgpdump's process
     char *filename = argv[1];
     char *path = malloc(strlen("./bgpdump -Mv %s") + strlen(filename));
     sprintf(path, "./bgpdump -Mv %s", filename);
     FILE *rib_file = popen(path, "r");
-    
-    if (rib_file == NULL) {
-	printf("Could not open rib file.\n");
-	return -1;
-    }
-
-    // initialize the hashtable to store rib's contents
     struct hash_table *hashtable = init_hash_table(256);
     char *current = NULL;
-    char *previous = strdup("previous_prefix");
-    int i = 0;
+    current = strdup(extract_info(line = fgets(line, LINE_SIZE, rib_file))->prefix);
+    char *previous = strdup(current);
 
-    // loop through rib file's lines and extract information, adding
-    // nodes to the hashtable
     while ((line = fgets(line, LINE_SIZE, rib_file)) != NULL) {
         info = extract_info(line);
-        current = strdup(info->prefix);
-        if (strcmp(previous, current) != 0) {
-            free(previous);
-            previous = strdup(current);
-            add_pair(hashtable, info->prefix, info->as_num);
+        strcpy(current, info->prefix);
+        if (strcmp(current, previous) == 0) {
             strcpy(previous, current);
-            if (i % 100000 == 0) {
-                printf(".\n");
-		fflush(stdout);
-            }
-            ++i;
+            continue;
         }
-        free(current);
+        add_pair(hashtable, info->prefix, info->as_num);
+        strcpy(previous, current);
     }
+
+    pclose(rib_file);    
 
     struct as *autnums = load_autnums();
 
-    if (autnums == NULL ) {
-        printf("Could not load autnums.html.\n");
-        return -1;
-    }
+    FILE *txt_file = fopen("router-topology.txt", "r");
+    FILE *topology = fopen("as-topology.txt", "w+");
 
-    if (argc <= 2) {
-	printf("Please specify at least one IP address.\n");
-	return -1;
-    }
+    fflush(topology);
+    fprintf(topology, "graph astopology {\n");
 
-    // loop through each IP address passed as a command line argument and
-    // find its AS number and AS name
-    for (int i = 2; i < argc; ++i) {
-        int row = atoi(argv[i]);
-        char *address = strdup(argv[i]);
-        int count = 0;
-        struct node *match = NULL;
-        struct node *cursor = hashtable->table[row];
-        while (cursor != NULL) {
-            if (addr_matches_prefix(address, cursor->prefix)) {
+    char *line_one = malloc(1000);
+
+    while ((line_one = fgets(line_one, LINE_SIZE, txt_file)) != NULL) {
+	fflush(topology);
+	if (strchr(line_one, '}') != NULL || strchr(line_one, '{') != NULL ) {
+	    continue;
+	}
+	char *token = NULL;
+	char *address_one = NULL;
+	char *address_two = NULL;
+	token = strtok(line_one+1, "\"");
+	int i = 0;
+	while (token != NULL) {
+	    if (i==0) {
+	        address_one = strdup(token);
+	    }
+	    else if (i==2) {
+		address_two = strdup(token);
+	    }
+	    token = strtok(NULL, "\"");
+	    ++i;
+	}
+	int row = atoi(address_one);
+	int count = 0;
+        struct as_info *match = NULL;
+	struct as_info *cursor = hashtable->table[row];
+	while (cursor != NULL) {
+            if (addr_matches_prefix(address_one, cursor->prefix)) {
                 if (match != NULL && get_pref_len(cursor->prefix) == get_pref_len (match->prefix)) {
-                    count = 2;
+		    count = 2;
                     break;
                 }     		
                 if (match == NULL || get_pref_len(cursor->prefix) > get_pref_len(match->prefix)) {
-                    count = 1;
-                    match = cursor;
-                }
-            }
-            cursor = cursor->next;
-        }
-
-	// side comment: I would have formatted the string, but this cannot be done as I do not
-	// know the maximum length of the AS numbers used in the rib files used for testing
-        if (count == 0) {
-            printf("%s  %s  %s\n", argv[i], "-", "unknown");
-        }
+		    count = 1;
+		    match = cursor;
+		}
+	    }
+	    cursor = cursor->next;
+	}
+	if (count == 0) {
+            fprintf(topology, "\"- unknown\" -- ");
+	}
         else if (count == 2) {
-            printf("%s  %s  %s \n", argv[i], "-", "multiple");
-        }
-        else {
-            int as_number = match->as_num;
-            char *as_name = NULL;
+            fprintf(topology, "\"- multiple\" -- ");
+	}
+	else {
+	    int as_number = match->as_num;
+	    char *as_name = NULL;
             struct as *as_cursor = autnums;
             while (as_cursor != NULL) {
                 if (as_cursor->num == as_number) {
-                    as_name = as_cursor->name;
+		    as_name = as_cursor->name;
                     break;
                 } 
                 as_cursor = as_cursor->next;
             }
             if (as_cursor != NULL) {
-                printf("%s  %d  %s\n", argv[i], as_number, as_name);
+                fprintf(topology, "\"%d %s\" -- ", as_number, as_name);
             }
-            else {
-                printf("%s  %s  %s\n", argv[i], "-", "unknown");
+	    else {
+                fprintf(topology, "\"- unknown\" -- ");
             }
         }
+	row = atoi(address_two);
+	count = 0;
+        match = NULL;
+	cursor = hashtable->table[row];
+	while (cursor != NULL) {
+            if (addr_matches_prefix(address_two, cursor->prefix)) {
+                if (match != NULL && get_pref_len(cursor->prefix) == get_pref_len (match->prefix)) {
+		    count = 2;
+                    break;
+                }     		
+                if (match == NULL || get_pref_len(cursor->prefix) > get_pref_len(match->prefix)) {
+		    count = 1;
+		    match = cursor;
+		}
+	    }
+	    cursor = cursor->next;
+	}
+	if (count == 0) {
+            fprintf(topology, "\"- unknown\"\n");
+	}
+        else if (count == 2) {
+            fprintf(topology, "\"- multiple\"\n");
+	}
+	else {
+	    int as_number = match->as_num;
+	    char *as_name = NULL;
+            struct as *as_cursor = autnums;
+            while (as_cursor != NULL) {
+                if (as_cursor->num == as_number) {
+		    as_name = as_cursor->name;
+                    break;
+                } 
+                as_cursor = as_cursor->next;
+            }
+            if (as_cursor != NULL) {
+                fprintf(topology, "\"%d %s\"\n", as_number, as_name);
+            }
+	    else {
+                fprintf(topology, "\"- unknown\"\n");
+            }
+        }
+
+            
     }
 
-    // avoid any memory leaks by correctly freeing all allocated memory
+    fflush(topology);
+    fprintf(topology, "}");
+    fclose(txt_file);
+    fclose(topology);
     free(line);
     free(info);
     free(current);
     free(previous);
     free(path);
-    struct as *cursor = autnums;
-    while (cursor != NULL) {
-        struct as *delete_node = cursor;
-        cursor = cursor->next;
-        free(delete_node->name);
-        free(delete_node);
-    }
+    free(autnums);
     for (int i=0; i < 256; ++i) {
-        struct node *cursor = hashtable->table[i];
-        while(cursor != NULL) {
-            struct node *delete_node = cursor;
-            cursor = cursor->next;
-            free(delete_node->prefix);
-            free(delete_node);
-        }
+        free(hashtable->table[i]);
     }
     free(hashtable);
-    pclose(rib_file);
 
     return 0;
 }
