@@ -1,9 +1,44 @@
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 
 public class MainClass {
+
+    public static void method3A(Statement statement) {
+        String query = "SELECT AVG(RATING) AS AVERAGE FROM RELEASE WHERE RATING >= 8";
+        try {
+            ResultSet resultSet = statement.executeQuery(query);
+            while (resultSet.next()) {
+                System.out.println("Average rating: " + resultSet.getString("AVERAGE") + "\n");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void method3B(Statement statement) {
+
+    }
+
+    public static void method3C(Statement statement) {
+        String query = "SELECT name, count(memberof.mid) AS count_current_members " +
+                "FROM band, memberof " +
+                "WHERE band.bid = memberof.bid AND endyear IS NULL " +
+                "GROUP BY name " +
+                "HAVING count(memberof.mid) = (SELECT max(cnt) " +
+                "FROM (SELECT DISTINCT bid, count (mid) AS cnt " +
+                "FROM memberof " +
+                "WHERE endyear IS NULL " +
+                "GROUP BY bid) c " +
+                ");";
+        try {
+            ResultSet results = statement.executeQuery(query);
+            while (results.next()) {
+                System.out.println(results.getString("name") + "\t" + results.getInt("count_current_members"));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
     public static void main(String[] args) {
         try {
             Class.forName("org.postgresql.Driver");
@@ -15,22 +50,34 @@ public class MainClass {
         Connection connection = null;
         try {
             connection =
-                    DriverManager.getConnection("jdbc:postgresql://yacata.dcs.gla.ac.uk:5432/",
-                            "lev3_15_2147392n", "Niko1994");
+                    DriverManager.getConnection("jdbc:postgresql://localhost:5432/",
+                            "postgres", "CoriNico9594GLA");
         } catch (SQLException e) {
             System.out.println("Connection Failed!");
             e.printStackTrace();
             return;
         }
         if (connection != null) {
-            System.out.println("Controlling your database...");
+            System.out.println("Connection successful\n");
         } else {
             System.out.println("Failed to establish connection!");
         }
         try {
+            assert connection != null;
             Statement statement = connection.createStatement();
-            String sqlString = "CREATE TABLE ToBeDeleted (name integer)";
-            statement.executeUpdate(sqlString);
+
+            // running first SQL query
+            System.out.println("Results for Method3A\n");
+            method3A(statement);
+
+            // running second SQL query
+            System.out.println("Results for Method3B\n");
+            method3B(statement);
+
+            //running third SQL query
+            System.out.println("Results for Method3C\n");
+            method3C(statement);
+
         } catch (SQLException e) {
             e.printStackTrace();
         }
