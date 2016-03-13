@@ -32,11 +32,12 @@ public class MainClass {
     }
 
     public static void method3C(Statement statement) {
-        String query = "SELECT name, count(memberof.mid) AS count_current_members " +
-                "FROM band, memberof " +
-                "WHERE band.bid = memberof.bid AND endyear IS NULL " +
+        String query = "SELECT name, count(DISTINCT memberof.mid) AS count_current_members " +
+                "FROM band " +
+                "JOIN memberof ON band.bid = memberof.bid " +
+                "WHERE endyear IS NULL " +
                 "GROUP BY name " +
-                "HAVING count(memberof.mid) = (SELECT max(cnt) " +
+                "HAVING count(DISTINCT memberof.mid) = (SELECT max(cnt) " +
                 "FROM (SELECT DISTINCT bid, count (mid) AS cnt " +
                 "FROM memberof " +
                 "WHERE endyear IS NULL " +
