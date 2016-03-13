@@ -57,7 +57,7 @@ public class Lev3152147392n {
         try {
             Class.forName("org.postgresql.Driver");
         } catch (ClassNotFoundException e) {
-            System.out.println("Could not fine JDBC Driver");
+            System.out.println("Could not find JDBC Driver");
             e.printStackTrace();
             return;
         }
