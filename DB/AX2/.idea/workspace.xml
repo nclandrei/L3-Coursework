@@ -1,16 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="9588a7d7-af3e-4d61-83d9-74b6110a923b" name="Default" comment="Completed DB-AX2... Now have to produce the relational algebra trees.">
-      <change type="DELETED" beforePath="$PROJECT_DIR$/../Band.csv" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/../First-Assessed-CourseWork-v1.pdf" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/../Member.csv" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/../Memberof.csv" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/../Release.csv" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/../Song.csv" afterPath="" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/out/production/AX2/MainClass.class" afterPath="$PROJECT_DIR$/out/production/AX2/MainClass.class" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/MainClass.java" afterPath="$PROJECT_DIR$/src/MainClass.java" />
-    </list>
+    <list default="true" id="9588a7d7-af3e-4d61-83d9-74b6110a923b" name="Default" comment="Completed DB-AX2... Now have to produce the relational algebra trees." />
     <ignored path="AX2.iws" />
     <ignored path=".idea/workspace.xml" />
     <ignored path="$PROJECT_DIR$/out/" />
@@ -48,8 +39,8 @@
       <file leaf-file-name="MainClass.java" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/MainClass.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.5790441">
-              <caret line="34" column="24" selection-start-line="34" selection-start-column="24" selection-end-line="44" selection-end-column="20" />
+            <state vertical-scroll-proportion="0.9650735">
+              <caret line="35" column="30" selection-start-line="35" selection-start-column="30" selection-end-line="35" selection-end-column="30" />
               <folding>
                 <marker date="1457834114000" expanded="true" signature="125:185" placeholder="SELECT AVG(R... RELEASE" />
                 <marker date="1457834114000" expanded="true" signature="553:856" placeholder="select name member" />
@@ -699,7 +690,7 @@
       <updated>1457665627415</updated>
       <workItem from="1457665629197" duration="3571000" />
       <workItem from="1457750860628" duration="666000" />
-      <workItem from="1457822864362" duration="3059000" />
+      <workItem from="1457822864362" duration="3617000" />
     </task>
     <task id="LOCAL-00001" summary="Started working on DB-AX2.">
       <created>1457666640357</created>
@@ -729,7 +720,7 @@
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="7296000" />
+    <option name="totallyTimeSpent" value="7854000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="0" y="0" width="1440" height="900" extended-state="0" />
@@ -829,8 +820,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/MainClass.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.5790441">
-          <caret line="34" column="24" selection-start-line="34" selection-start-column="24" selection-end-line="44" selection-end-column="20" />
+        <state vertical-scroll-proportion="0.9650735">
+          <caret line="35" column="30" selection-start-line="35" selection-start-column="30" selection-end-line="35" selection-end-column="30" />
           <folding>
             <marker date="1457834114000" expanded="true" signature="125:185" placeholder="SELECT AVG(R... RELEASE" />
             <marker date="1457834114000" expanded="true" signature="553:856" placeholder="select name member" />
