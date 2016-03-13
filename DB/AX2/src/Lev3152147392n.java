@@ -1,6 +1,6 @@
 import java.sql.*;
 
-public class MainClass {
+public class Lev3152147392n {
 
     public static void method3A(Statement statement) {
         String query = "SELECT AVG(RATING) AS AVERAGE FROM RELEASE WHERE RATING >= 8";
