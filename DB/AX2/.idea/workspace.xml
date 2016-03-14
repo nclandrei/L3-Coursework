@@ -1,11 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="9588a7d7-af3e-4d61-83d9-74b6110a923b" name="Default" comment="Completed DB-AX2... Now have to produce the relational algebra trees.">
-      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/AX2/MainClass.class" afterPath="" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/Lev3152147392n.java" afterPath="$PROJECT_DIR$/src/Lev3152147392n.java" />
-    </list>
+    <list default="true" id="9588a7d7-af3e-4d61-83d9-74b6110a923b" name="Default" comment="Completed DB-AX2... Now have to produce the relational algebra trees." />
     <ignored path="AX2.iws" />
     <ignored path=".idea/workspace.xml" />
     <ignored path="$PROJECT_DIR$/out/" />
@@ -43,8 +39,8 @@
       <file leaf-file-name="Lev3152147392n.java" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/Lev3152147392n.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="1.9025736">
-              <caret line="69" column="53" selection-start-line="69" selection-start-column="53" selection-end-line="69" selection-end-column="53" />
+            <state vertical-scroll-proportion="0.5790441">
+              <caret line="21" column="23" selection-start-line="21" selection-start-column="23" selection-end-line="21" selection-end-column="23" />
               <folding>
                 <marker date="1457912871000" expanded="true" signature="130:190" placeholder="SELECT AVG(R... RELEASE" />
                 <marker date="1457912871000" expanded="true" signature="558:861" placeholder="select name member" />
@@ -695,7 +691,7 @@
       <updated>1457665627415</updated>
       <workItem from="1457665629197" duration="3571000" />
       <workItem from="1457750860628" duration="666000" />
-      <workItem from="1457822864362" duration="4148000" />
+      <workItem from="1457822864362" duration="4385000" />
     </task>
     <task id="LOCAL-00001" summary="Started working on DB-AX2.">
       <created>1457666640357</created>
@@ -725,7 +721,7 @@
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="8385000" />
+    <option name="totallyTimeSpent" value="8622000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="0" y="0" width="1440" height="900" extended-state="0" />
@@ -738,7 +734,7 @@
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Maven Projects" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32942554" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.32942554" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32942554" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Designer" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.24722221" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
@@ -825,8 +821,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/Lev3152147392n.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="1.9025736">
-          <caret line="69" column="53" selection-start-line="69" selection-start-column="53" selection-end-line="69" selection-end-column="53" />
+        <state vertical-scroll-proportion="0.5790441">
+          <caret line="21" column="23" selection-start-line="21" selection-start-column="23" selection-end-line="21" selection-end-column="23" />
           <folding>
             <marker date="1457912871000" expanded="true" signature="130:190" placeholder="SELECT AVG(R... RELEASE" />
             <marker date="1457912871000" expanded="true" signature="558:861" placeholder="select name member" />
