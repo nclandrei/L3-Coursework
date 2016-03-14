@@ -64,8 +64,8 @@ public class Lev3152147392n {
         Connection connection = null;
         try {
             connection =
-                    DriverManager.getConnection("jdbc:postgresql://localhost:5432/",
-                            "postgres", "CoriNico9594GLA");
+                    DriverManager.getConnection("jdbc:postgresql://yacata.dcs.gla.ac.uk:5432/",
+                            "lev3_15_2147392n", "2147392n");
         } catch (SQLException e) {
             System.out.println("Connection Failed!");
             e.printStackTrace();
