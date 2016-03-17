@@ -17,11 +17,19 @@
     </style>
 </head>
 <body>
-<nav class="light-blue lighten-1" role="navigation">
+<nav role="navigation">
     <div class="nav-wrapper container">
         <a href="#" class="brand-logo">
-            <img src="img/logo.png" alt="" id="header-img"><span id="logo-text"><span
-                style="color:#333;">Crichton</span> <span style="color:#4F9149;">Institute</span></span>
+            <img src="img/logo_original.png" height="116px" alt="" id="header-img">
+            <!--<span id="logo-text">
+                <span style="color:#58595b;">Crichton</span>
+                <span style="color:#4e914c;">Institute</span>
+            </span>-->
+            <!--
+            <span id="logo-subtext">
+                <span style="color:#4e914c;">Regional Observatory</span>
+            </span>
+            -->
         </a>
         <ul class="right hide-on-med-and-down">
             <li><!--suppress XmlDuplicatedId -->
@@ -32,6 +40,7 @@
             <li><!--suppress XmlDuplicatedId -->
                 <a href="#" id="bug-report-button">Submit a bug report</a></li>
             <li><a href="#">About</a></li>
+            <li><a href="#">Team</a></li>
         </ul>
         <a href="#" data-activates="nav-mobile" class="button-collapse"><i class="material-icons">menu</i></a>
     </div>
@@ -45,9 +54,6 @@
             <h5 class="header col s12 light">A modern way to extract tables from PDF and DOCX files</h5>
         </div>
         <div class="row center">
-            <!--
-            <a href="http://materializecss.com/getting-started.html" id="download-button" class="btn-large waves-effect waves-light orange">upload file</a>
-            -->
             <!--suppress HtmlUnknownTarget -->
             <form method="POST" action="uploadFile" id="localUpload" enctype="multipart/form-data">
                 <label class="btn-large waves-effect waves-light orange" type="file"
@@ -65,12 +71,11 @@
                 </button>
                 <div id="modal2" class="modal modal-fixed-footer">
                     <div class="modal-content">
-                        <h4>Important notice</h4>
+                        <h3 id="notice-title">Important notice</h3>
 
-                        <p>The preferred filetype for this tool is <b>DOCX</b> (Microsoft Word). <b>PDF</b>
-                            files are also supported, however, 100% accurancy is not guaranteed. Please read the terms
-                            of service
-                            and privacy policy below and only use the tool if you agree with them.</p>
+                        <p id="notice-text">The preferred filetype for this tool is <b>DOCX</b> (Microsoft Word). <b>PDF</b>
+                            files are also supported, however, 100% accurancy is not guaranteed. By using this tool you agree to the
+                            terms of service and privacy policy below.</p>
                         <h5>Terms of Service</h5>
                         <h6>
                             1. Terms
@@ -212,7 +217,7 @@
                         <button id="agreeToUpload" class=" modal-action modal-close waves-effect waves-light btn orange"
                                 type="submit" name="action" style="margin-left:4px;">Agree
                         </button>
-                        <a href="#" class=" modal-action modal-close waves-effect waves-light btn">Cancel</a>
+                        <a href="#" id="cancel" class=" modal-action modal-close waves-effect waves-light btn">Cancel</a>
                     </div>
                 </div>
 
