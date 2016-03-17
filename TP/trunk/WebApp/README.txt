@@ -1,6 +1,8 @@
 You will find 2 folders named "csv" and "images".
 
-The "csv" folder will contain all the tables extracted from the PDF/DOCX you provided, while the "images" one will have all images (JPG and PNG formats) found inside the file.
+The "csv" folder will contain all the tables extracted from the PDF/DOCX you
+provided, while the "images" one will have all images (JPG and PNG formats)
+found inside the file.
 
 Thank you for using our application!
 
